@@ -1,0 +1,578 @@
+diff --git a/internal/dataprovider/bolt.go b/internal/dataprovider/bolt.go
+--- a/internal/dataprovider/bolt.go
++++ b/internal/dataprovider/bolt.go
+@@ -3965,3 +3965,19 @@ func updateBoltDatabaseVersion(dbHandle *bolt.DB, version int) error {
+ 	})
+ 	return err
+ }
++
++// renameShare changes the public ID and settings in one transaction.
++func (p *BoltProvider) renameShare(oldID string, share *Share) error {
++ if err:=share.validate();err!=nil{return err}
++ return p.dbHandle.Update(func(tx *bolt.Tx) error {
++  bucket,err:=p.getSharesBucket(tx);if err!=nil{return err}
++  raw:=bucket.Get([]byte(oldID));if raw==nil{return util.NewRecordNotFoundError("Share does not exist")}
++  var old Share;if err=json.Unmarshal(raw,&old);err!=nil{return err}
++  if old.Username!=share.Username{return util.NewRecordNotFoundError("Share does not exist")}
++  if bucket.Get([]byte(share.ShareID))!=nil{return util.NewValidationError("这个分享后缀已被占用，请换一个")}
++  share.ID=old.ID;share.CreatedAt=old.CreatedAt;share.LastUseAt=old.LastUseAt;share.UsedTokens=old.UsedTokens;share.UpdatedAt=util.GetTimeAsMsSinceEpoch(time.Now())
++  data,err:=json.Marshal(share);if err!=nil{return err}
++  if err=bucket.Put([]byte(share.ShareID),data);err!=nil{return err}
++  return bucket.Delete([]byte(oldID))
++ })
++}
+diff --git a/internal/dataprovider/dataprovider.go b/internal/dataprovider/dataprovider.go
+--- a/internal/dataprovider/dataprovider.go
++++ b/internal/dataprovider/dataprovider.go
+@@ -5004,3 +5004,11 @@ func getCmdOutput(cmd *exec.Cmd, sender string) ([]byte, error) {
+ func providerLog(level logger.LogLevel, format string, v ...any) {
+ 	logger.Log(level, logSender, "", format, v...)
+ }
++
++// RenameShare atomically changes the public ID on providers supporting it.
++func RenameShare(oldID string,share *Share,executor,ipAddress,role string) error {
++ p,ok:=provider.(interface{renameShare(string,*Share) error});if !ok{return util.NewValidationError("当前存储不支持修改分享后缀")}
++ err:=p.renameShare(oldID,share)
++ if err==nil{executeAction(operationUpdate,executor,ipAddress,actionObjectShare,share.ShareID,role,share)}
++ return err
++}
+diff --git a/internal/dataprovider/user.go b/internal/dataprovider/user.go
+--- a/internal/dataprovider/user.go
++++ b/internal/dataprovider/user.go
+@@ -1330,9 +1330,21 @@ func (u *User) MustSetSecondFactorForProtocol(protocol string) bool {
+ // GetSignature returns a signature for this user.
+ // It will change after an update
+ func (u *User) GetSignature() string {
++	if u.IsNASAdminFileView() {
++		admin, err := AdminExists(strings.TrimPrefix(u.Description, "nas-admin-view:"))
++		if err != nil || admin.Status != 1 || admin.Role != "" || !admin.HasPermission(PermAdminAny) {
++			return ""
++		}
++		return admin.GetSignature() + ":nas-all-files"
++	}
+ 	return strconv.FormatInt(u.UpdatedAt, 10)
+ }
+ 
++// IsNASAdminFileView identifies an internal administrator file browser session.
++func (u *User) IsNASAdminFileView() bool {
++	return strings.HasPrefix(u.Username, "__nas_admin_view_") && strings.HasPrefix(u.Description, "nas-admin-view:")
++}
++
+ // GetBandwidthForIP returns the upload and download bandwidth for the specified IP
+ func (u *User) GetBandwidthForIP(clientIP, connectionID string) (int64, int64) {
+ 	if len(u.Filters.BandwidthLimits) > 0 {
+diff --git a/internal/httpd/api_http_user.go b/internal/httpd/api_http_user.go
+--- a/internal/httpd/api_http_user.go
++++ b/internal/httpd/api_http_user.go
+@@ -289,6 +289,9 @@ func doUploadFile(w http.ResponseWriter, r *http.Request, connection *Connection
+ 	}
+ 	_, err = io.Copy(writer, r.Body)
+ 	if err != nil {
++		if transfer, ok := writer.(*httpdFile); ok {
++			transfer.TransferError(err)
++		}
+ 		writer.Close()
+ 		sendAPIResponse(w, r, err, fmt.Sprintf("Error saving file %q", filePath), getMappedStatusCode(err))
+ 		return err
+@@ -377,6 +380,9 @@ func doUploadFiles(w http.ResponseWriter, r *http.Request, connection *Connectio
+ 		}
+ 		_, err = io.Copy(writer, file)
+ 		if err != nil {
++			if transfer, ok := writer.(*httpdFile); ok {
++				transfer.TransferError(err)
++			}
+ 			writer.Close()
+ 			sendAPIResponse(w, r, err, fmt.Sprintf("Error saving file %q", f.Filename), getMappedStatusCode(err))
+ 			return uploaded
+@@ -420,7 +426,7 @@ func deleteUserFile(w http.ResponseWriter, r *http.Request) {
+ 		sendAPIResponse(w, r, err, fmt.Sprintf("Unable delete %q, it is not a file/symlink", name), http.StatusBadRequest)
+ 		return
+ 	}
+-	err = connection.RemoveFile(fs, p, name, fi)
++	err = nasRecycleMove(connection, name)
+ 	if err != nil {
+ 		sendAPIResponse(w, r, err, fmt.Sprintf("Unable to delete file %q", name), getMappedStatusCode(err))
+ 		return
+diff --git a/internal/httpd/api_utils.go b/internal/httpd/api_utils.go
+--- a/internal/httpd/api_utils.go
++++ b/internal/httpd/api_utils.go
+@@ -506,9 +506,15 @@ func addFileToZipEntry(wr *zip.Writer, conn *Connection, entryPath, entryName st
+ 	}
+ 	defer reader.Close()
+ 
++	// Already-compressed files benefit from streaming without another compression pass.
++	compressionMethod := uint16(zip.Deflate)
++	switch strings.ToLower(path.Ext(entryPath)) {
++	case ".zip", ".rar", ".7z", ".gz", ".xz", ".bz2", ".zst", ".exe", ".msi", ".iso", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".mkv", ".mov", ".mp3", ".m4a", ".flac", ".ogg", ".woff", ".woff2":
++		compressionMethod = zip.Store
++	}
+ 	f, err := wr.CreateHeader(&zip.FileHeader{
+ 		Name:     entryName,
+-		Method:   zip.Deflate,
++		Method:   compressionMethod,
+ 		Modified: info.ModTime(),
+ 	})
+ 	if err != nil {
+@@ -776,7 +782,12 @@ func checkHTTPClientUser(user *dataprovider.User, r *http.Request, connectionID
+ 			util.I18nErrorProtocolForbidden,
+ 		)
+ 	}
+-	if !isLoggedInWithOIDC(r) && !isOIDCLogin && !user.IsLoginMethodAllowed(dataprovider.LoginMethodPassword, common.ProtocolHTTP) {
++	nasAdminSession := false
++	if user.IsNASAdminFileView() {
++		claims, err := jwt.FromContext(r.Context())
++		nasAdminSession = err == nil && claims.Username == user.Username && claims.Audience.Contains(tokenAudienceWebClient) && user.GetSignature() != "" && claims.Subject == user.GetSignature()
++	}
++	if !nasAdminSession && !isLoggedInWithOIDC(r) && !isOIDCLogin && !user.IsLoginMethodAllowed(dataprovider.LoginMethodPassword, common.ProtocolHTTP) {
+ 		logger.Info(logSender, connectionID, "cannot login user %q, password login method is not allowed", user.Username)
+ 		return util.NewI18nError(
+ 			fmt.Errorf("login method password is not allowed for user %q", user.Username),
+diff --git a/internal/httpd/auth_utils.go b/internal/httpd/auth_utils.go
+--- a/internal/httpd/auth_utils.go
++++ b/internal/httpd/auth_utils.go
+@@ -19,6 +19,7 @@ import (
+ 	"errors"
+ 	"fmt"
+ 	"net/http"
++	"strings"
+ 	"time"
+ 
+ 	"github.com/drakkan/sftpgo/v2/internal/dataprovider"
+@@ -72,7 +73,9 @@ func updateTokensDuration(api, cookie, share int) {
+ 	if isTokenDurationValid(api) {
+ 		apiTokenDuration = time.Duration(api) * time.Minute
+ 	}
+-	if isTokenDurationValid(cookie) {
++	// BrowserNAS: allow persistent browser sessions for up to 30 days.
++	// API/share limits and the absolute refresh cap remain unchanged.
++	if cookie >= 1 && cookie <= 30*24*60 {
+ 		cookieTokenDuration = time.Duration(cookie) * time.Minute
+ 		cookieRefreshThreshold = cookieTokenDuration / 2
+ 		if cookieTokenDuration > csrfTokenDuration {
+@@ -199,6 +202,11 @@ func getUserFromToken(r *http.Request) *dataprovider.User {
+ 		return user
+ 	}
+ 	user.Username = claims.Username
++	if strings.HasPrefix(user.Username, "__nas_admin_view_") {
++		if stored, err := dataprovider.UserExists(user.Username, ""); err == nil {
++			user.Description = stored.Description
++		}
++	}
+ 	user.Filters.WebClient = claims.Permissions
+ 	user.Role = claims.Role
+ 	return user
+@@ -402,6 +410,14 @@ func validateIPForToken(token *jwt.Claims, ip string) error {
+ }
+ 
+ func checkTokenSignature(r *http.Request, token *jwt.Claims) error {
++	// Privileged NAS sessions always track the administrator's current permissions and signature.
++	if hasUserAudience(token) && strings.HasPrefix(token.Username, "__nas_admin_view_") {
++		user, err := dataprovider.UserExists(token.Username, "")
++		if err != nil || user.Status != 1 || !user.IsNASAdminFileView() || user.GetSignature() == "" || user.GetSignature() != token.Subject {
++			return errInvalidToken
++		}
++		return nil
++	}
+ 	if _, ok := r.Context().Value(oidcTokenKey).(string); ok {
+ 		return nil
+ 	}
+diff --git a/internal/httpd/handler.go b/internal/httpd/handler.go
+--- a/internal/httpd/handler.go
++++ b/internal/httpd/handler.go
+@@ -194,7 +194,7 @@ func (c *Connection) getFileWriter(name string) (io.WriteCloser, error) {
+ 		return nil, c.GetPermissionDeniedError()
+ 	}
+ 
+-	if common.Config.IsAtomicUploadEnabled() && fs.IsAtomicUploadSupported() {
++	if common.Config.IsAtomicUploadEnabled() && fs.IsAtomicUploadSupported() && !vfs.IsLocalOsFs(fs) {
+ 		_, _, err = fs.Rename(p, filePath, 0)
+ 		if err != nil {
+ 			c.Log(logger.LevelError, "error renaming existing file for atomic upload, source: %q, dest: %q, err: %+v",
+@@ -233,7 +233,10 @@ func (c *Connection) handleUploadFile(fs vfs.Fs, resolvedPath, filePath, request
+ 	initialSize := int64(0)
+ 	truncatedSize := int64(0) // bytes truncated and not included in quota
+ 	if !isNewFile {
+-		if vfs.HasTruncateSupport(fs) {
++		if vfs.IsLocalOsFs(fs) && filePath != resolvedPath {
++			// Keep the previous file readable until the completed temporary upload replaces it.
++			initialSize = fileSize
++		} else if vfs.HasTruncateSupport(fs) {
+ 			vfolder, err := c.User.GetVirtualFolderForPath(path.Dir(requestPath))
+ 			if err == nil {
+ 				dataprovider.UpdateUserFolderQuota(&vfolder, &c.User, 0, -fileSize, false)
+diff --git a/internal/httpd/server.go b/internal/httpd/server.go
+--- a/internal/httpd/server.go
++++ b/internal/httpd/server.go
+@@ -1615,6 +1615,8 @@ func (s *httpdServer) setupWebClientRoutes() {
+ 		s.router.Get(webClientPubSharesPath+"/{id}/browse", s.handleShareGetFiles)
+ 		s.router.Post(webClientPubSharesPath+"/{id}/browse/exist", s.handleClientShareCheckExist)
+ 		s.router.Get(webClientPubSharesPath+"/{id}/download", s.handleClientSharedFile)
++		s.router.Get(webClientPubSharesPath+"/{id}/view", s.handleAirSharePage)
++ s.router.Post(webClientPubSharesPath+"/{id}/manifest",s.handleNASShareDownloadManifest)
+ 		s.router.Get(webClientPubSharesPath+"/{id}/upload", s.handleClientUploadToShare)
+ 		s.router.With(compressor.Handler).Get(webClientPubSharesPath+"/{id}/dirs", s.handleShareGetDirContents)
+ 		s.router.Post(webClientPubSharesPath+"/{id}", s.uploadFilesToShare)
+@@ -1628,9 +1630,13 @@ func (s *httpdServer) setupWebClientRoutes() {
+ 			}
+ 			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
+ 			router.Use(jwtAuthenticatorWebClient)
++			router.With(s.checkAuthRequirements).Post(webBaseClientPath+"/download-progress", s.createNASDownloadJob)
++			router.With(s.checkAuthRequirements).Post(webBaseClientPath+"/download-manifest", s.handleNASDownloadManifest)
++			router.With(s.checkAuthRequirements).Get(webBaseClientPath+"/download-progress/{id}", getNASDownloadProgress)
++			router.With(s.checkAuthRequirements).Post(webClientProfilePath+"/avatar", s.handleNASAvatar)
+ 
+ 			router.Get(webClientLogoutPath, s.handleWebClientLogout)
+-			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientFilesPath, s.handleClientGetFiles)
++			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientFilesPath, s.handleNASFileDownload)
+ 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientViewPDFPath, s.handleClientViewPDF)
+ 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientGetPDFPath, s.handleClientGetPDF)
+ 			router.With(s.checkAuthRequirements, s.refreshCookie, s.verifyCSRFHeader).Get(webClientFilePath, getUserFile)
+@@ -1645,6 +1651,9 @@ func (s *httpdServer) setupWebClientRoutes() {
+ 				Delete(webClientFilesPath, deleteUserFile)
+ 			router.With(s.checkAuthRequirements, compressor.Handler, s.refreshCookie).
+ 				Get(webClientDirsPath, s.handleClientGetDirContents)
++			router.With(s.checkAuthRequirements, s.refreshCookie).Get("/web/client/recycle", handleNASRecycle)
++			router.With(s.checkAuthRequirements, s.refreshCookie).Get("/web/client/capacity", handleNASCapacity)
++			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).Post("/web/client/recycle", handleNASRecycle)
+ 			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
+ 				Post(webClientDirsPath, createUserDir)
+ 			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
+@@ -1654,7 +1663,7 @@ func (s *httpdServer) setupWebClientRoutes() {
+ 			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
+ 				Post(webClientFileActionsPath+"/copy", taskCopyFsEntry)
+ 			router.With(s.checkAuthRequirements, s.refreshCookie).
+-				Post(webClientDownloadZipPath, s.handleWebClientDownloadZip)
++				Post(webClientDownloadZipPath, s.handleNASZipDownload)
+ 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientPingPath, handlePingRequest)
+ 			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientProfilePath,
+ 				s.handleClientGetProfile)
+@@ -1747,6 +1756,8 @@ func (s *httpdServer) setupWebAdminRoutes() {
+ 			}
+ 			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
+ 			router.Use(jwtAuthenticatorWebAdmin)
++			router.With(s.checkAuthRequirements, s.requireBuiltinLogin).Post(webAdminProfilePath+"/avatar", s.handleNASAvatar)
++			router.With(s.checkAuthRequirements, s.requireBuiltinLogin).Get(webBaseAdminPath+"/all-files", s.handleNASAdminFiles)
+ 
+ 			router.Get(webLogoutPath, s.handleWebAdminLogout)
+ 			router.With(s.refreshCookie, s.checkAuthRequirements, s.requireBuiltinLogin).Get(
+@@ -1922,3 +1933,4 @@ func (s *httpdServer) setupWebAdminRoutes() {
+ 		})
+ 	}
+ }
++
+diff --git a/internal/httpd/webadmin.go b/internal/httpd/webadmin.go
+--- a/internal/httpd/webadmin.go
++++ b/internal/httpd/webadmin.go
+@@ -111,6 +111,9 @@ var (
+ )
+ 
+ type basePage struct {
++	AvatarURL     string
++	AvatarChoice  string
++	AvatarOptions []string
+ 	commonBasePage
+ 	Title               string
+ 	CurrentURL          string
+@@ -664,6 +667,9 @@ func (s *httpdServer) getBasePageData(title, currentURL string, w http.ResponseW
+ 		FolderQuotaScanURL:  webScanVFolderPath,
+ 		MaintenanceURL:      webMaintenancePath,
+ 		LoggedUser:          getAdminFromToken(r),
++		AvatarURL:           nasAvatarURL("admin", getAdminFromToken(r).Username),
++		AvatarChoice:        nasAvatarChoice("admin", getAdminFromToken(r).Username),
++		AvatarOptions:       []string{"0", "1", "2", "3", "4", "5", "6", "7"},
+ 		IsEventManagerPage:  isEventManagerResource(currentURL),
+ 		IsIPManagerPage:     isIPListsResource(currentURL),
+ 		IsServerManagerPage: isServerManagerResource(currentURL),
+@@ -2983,7 +2989,11 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
+ 		s.renderProfilePage(w, r, err)
+ 		return
+ 	}
+-	s.renderMessagePage(w, r, util.I18nProfileTitle, http.StatusOK, nil, util.I18nProfileUpdated)
++	updated, refreshErr := dataprovider.AdminExists(claims.Username)
++ if refreshErr != nil { s.renderProfilePage(w,r,refreshErr); return }
++ claims.Subject=updated.GetSignature()
++ if refreshErr=createAndSetCookie(w,r,claims,s.tokenAuth,tokenAudienceWebAdmin,ipAddr); refreshErr != nil { s.renderProfilePage(w,r,refreshErr); return }
++ http.Redirect(w, r, webAdminProfilePath+"?saved=1", http.StatusSeeOther)
+ }
+ 
+ func (s *httpdServer) handleWebMaintenance(w http.ResponseWriter, r *http.Request) {
+diff --git a/internal/httpd/webclient.go b/internal/httpd/webclient.go
+--- a/internal/httpd/webclient.go
++++ b/internal/httpd/webclient.go
+@@ -83,6 +83,9 @@ func isZeroTime(t time.Time) bool {
+ }
+ 
+ type baseClientPage struct {
++	AvatarURL     string
++	AvatarChoice  string
++	AvatarOptions []string
+ 	commonBasePage
+ 	Title           string
+ 	CurrentURL      string
+@@ -127,6 +130,7 @@ type editFilePage struct {
+ }
+ 
+ type filesPage struct {
++ nasShareIdentity
+ 	baseClientPage
+ 	CurrentDir         string
+ 	DirsURL            string
+@@ -162,8 +166,12 @@ type shareLoginPage struct {
+ }
+ 
+ type shareDownloadPage struct {
++ nasShareIdentity
+ 	baseClientPage
+-	DownloadLink string
++	DownloadLink   string
++	ShareNames     []string
++	ShareItems     []nasSharedItem
++	ShareCreatedAt int64
+ }
+ 
+ type shareUploadPage struct {
+@@ -257,12 +265,17 @@ func (u *userQuotaUsage) HasTranferQuota() bool {
+ 	return u.UsedDownloadDataTransfer > 0 || u.UsedUploadDataTransfer > 0
+ }
+ 
++// GetUsedSpace returns this account's tracked disk usage, separately from its quota.
++func (u *userQuotaUsage) GetUsedSpace() string {
++	return nasDisplaySize(u.UsedQuotaSize)
++}
++
+ func (u *userQuotaUsage) GetQuotaSize() string {
+ 	if u.QuotaSize > 0 {
+-		return fmt.Sprintf("%s/%s", util.ByteCountIEC(u.UsedQuotaSize), util.ByteCountIEC(u.QuotaSize))
++		return fmt.Sprintf("%s/%s", nasDisplaySize(u.UsedQuotaSize), nasDisplaySize(u.QuotaSize))
+ 	}
+ 	if u.UsedQuotaSize > 0 {
+-		return util.ByteCountIEC(u.UsedQuotaSize)
++		return nasDisplaySize(u.UsedQuotaSize)
+ 	}
+ 	return ""
+ }
+@@ -306,32 +319,32 @@ func (u *userQuotaUsage) IsDiskQuotaLow() bool {
+ func (u *userQuotaUsage) GetTotalTransferQuota() string {
+ 	total := u.UsedUploadDataTransfer + u.UsedDownloadDataTransfer
+ 	if u.TotalDataTransfer > 0 {
+-		return fmt.Sprintf("%s/%s", util.ByteCountIEC(total), util.ByteCountIEC(u.TotalDataTransfer*1048576))
++		return fmt.Sprintf("%s/%s", nasDisplaySize(total), nasDisplaySize(u.TotalDataTransfer*1048576))
+ 	}
+ 	if total > 0 {
+-		return util.ByteCountIEC(total)
++		return nasDisplaySize(total)
+ 	}
+ 	return ""
+ }
+ 
+ func (u *userQuotaUsage) GetUploadTransferQuota() string {
+ 	if u.UploadDataTransfer > 0 {
+-		return fmt.Sprintf("%s/%s", util.ByteCountIEC(u.UsedUploadDataTransfer),
+-			util.ByteCountIEC(u.UploadDataTransfer*1048576))
++		return fmt.Sprintf("%s/%s", nasDisplaySize(u.UsedUploadDataTransfer),
++			nasDisplaySize(u.UploadDataTransfer*1048576))
+ 	}
+ 	if u.UsedUploadDataTransfer > 0 {
+-		return util.ByteCountIEC(u.UsedUploadDataTransfer)
++		return nasDisplaySize(u.UsedUploadDataTransfer)
+ 	}
+ 	return ""
+ }
+ 
+ func (u *userQuotaUsage) GetDownloadTransferQuota() string {
+ 	if u.DownloadDataTransfer > 0 {
+-		return fmt.Sprintf("%s/%s", util.ByteCountIEC(u.UsedDownloadDataTransfer),
+-			util.ByteCountIEC(u.DownloadDataTransfer*1048576))
++		return fmt.Sprintf("%s/%s", nasDisplaySize(u.UsedDownloadDataTransfer),
++			nasDisplaySize(u.DownloadDataTransfer*1048576))
+ 	}
+ 	if u.UsedDownloadDataTransfer > 0 {
+-		return util.ByteCountIEC(u.UsedDownloadDataTransfer)
++		return nasDisplaySize(u.UsedDownloadDataTransfer)
+ 	}
+ 	return ""
+ }
+@@ -555,6 +568,9 @@ func (s *httpdServer) getBaseClientPageData(title, currentURL string, w http.Res
+ 		MFAURL:          webClientMFAPath,
+ 		CSRFToken:       csrfToken,
+ 		LoggedUser:      getUserFromToken(r),
++		AvatarURL:       nasAvatarURL("user", getUserFromToken(r).Username),
++		AvatarChoice:    nasAvatarChoice("user", getUserFromToken(r).Username),
++		AvatarOptions:   []string{"0", "1", "2", "3", "4", "5", "6", "7"},
+ 		IsLoggedToShare: false,
+ 		Branding:        s.binding.webClientBranding(),
+ 		Languages:       s.binding.languages(),
+@@ -765,6 +781,7 @@ func (s *httpdServer) renderSharedFilesPage(w http.ResponseWriter, r *http.Reque
+ 	baseData.IsLoggedToShare = share.Password != ""
+ 
+ 	data := filesPage{
++ nasShareIdentity: nasPublicShareIdentity(&share),
+ 		baseClientPage: baseData,
+ 		Error:          err,
+ 		CurrentDir:     url.QueryEscape(dirName),
+@@ -795,8 +812,18 @@ func (s *httpdServer) renderShareDownloadPage(w http.ResponseWriter, r *http.Req
+ 	downloadLink string,
+ ) {
+ 	data := shareDownloadPage{
++ nasShareIdentity: nasPublicShareIdentity(share),
+ 		baseClientPage: s.getBaseClientPageData(util.I18nShareDownloadTitle, "", w, r),
+ 		DownloadLink:   downloadLink,
++		ShareCreatedAt: share.CreatedAt,
++	}
++	owner, ownerErr := dataprovider.GetUserWithGroupSettings(share.Username, "")
++	if ownerErr == nil {
++		defer owner.CloseFs()
++	}
++	for _, sharedPath := range share.Paths {
++		data.ShareNames = append(data.ShareNames, path.Base(sharedPath))
++		data.ShareItems = append(data.ShareItems, nasSharedItem{Name: path.Base(sharedPath), Directory: ownerErr == nil && nasSharedDirectory(&owner, sharedPath)})
+ 	}
+ 	data.LogoutURL = ""
+ 	if share.Password != "" {
+@@ -979,12 +1006,17 @@ func (s *httpdServer) handleClientSharePartialDownload(w http.ResponseWriter, r
+ 		s.renderClientMessagePage(w, r, util.I18nShareAccessErrorTitle, getRespStatus(err), err, "")
+ 		return
+ 	}
++ if len(filesList)==1&&!strings.ContainsAny(filesList[0],"/\\")&&filesList[0]!=".." {
++  entry:=path.Join(name,filesList[0]);info,statErr:=connection.Stat(entry,1)
++  if statErr==nil&&info.Mode().IsRegular(){if _,downloadErr:=downloadFile(w,r,connection,entry,info,false,&share);downloadErr!=nil{_ = dataprovider.UpdateShareLastUse(&share,-1)};return}
++ }
+ 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"",
+ 		getCompressedFileName(fmt.Sprintf("share-%s", share.Name), filesList)))
+ 	renderCompressedFiles(w, connection, name, filesList, &share)
+ }
+ 
+ func (s *httpdServer) handleShareGetDirContents(w http.ResponseWriter, r *http.Request) {
++	w.Header().Set("Cache-Control", "no-store")
+ 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
+ 	validScopes := []dataprovider.ShareScope{dataprovider.ShareScopeRead, dataprovider.ShareScopeReadWrite}
+ 	share, connection, err := s.checkPublicShare(w, r, validScopes)
+@@ -1221,6 +1253,11 @@ func (s *httpdServer) handleClientGetDirContents(w http.ResponseWriter, r *http.
+ 	}
+ 	defer common.Connections.Remove(connection.GetID())
+ 
++	if query := strings.TrimSpace(r.URL.Query().Get("search")); query != "" {
++		renderNASRecursiveSearch(w, r, connection, query)
++		return
++	}
++
+ 	name := connection.User.GetCleanedPath(r.URL.Query().Get("path"))
+ 	lister, err := connection.ReadDir(name)
+ 	if err != nil {
+@@ -1233,7 +1270,7 @@ func (s *httpdServer) handleClientGetDirContents(w http.ResponseWriter, r *http.
+ 	dirTree := r.URL.Query().Get("dirtree") == "1"
+ 	dataGetter := func(limit, offset int) ([]byte, int, error) {
+ 		contents, finished, err := nextRenderableEntries(lister, limit, func(info os.FileInfo) bool {
+-			return info.IsDir() || !dirTree
++			return !strings.HasPrefix(info.Name(), ".sftpgo-upload.") && (info.IsDir() || !dirTree)
+ 		})
+ 		if err != nil {
+ 			return nil, 0, err
+@@ -1382,7 +1419,7 @@ func (s *httpdServer) handleClientEditFile(w http.ResponseWriter, r *http.Reques
+ 		s.renderClientMessagePage(w, r, util.I18nErrorEditorTitle, http.StatusBadRequest,
+ 			util.NewI18nError(
+ 				util.NewValidationError(fmt.Sprintf("The file size %v for %q exceeds the maximum allowed size",
+-					util.ByteCountIEC(info.Size()), name)),
++					nasDisplaySize(info.Size()), name)),
+ 				util.I18nErrorEditSize,
+ 			), "")
+ 		return
+@@ -1486,9 +1523,24 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
+ 		return
+ 	}
+ 	share.ID = 0
+-	share.ShareID = util.GenerateUniqueID()
++	if err := airAssignShareID(share, r); err != nil {
++		s.renderAddUpdateSharePage(w, r, share, util.NewI18nError(err, err.Error()), true)
++		return
++	}
+ 	share.LastUseAt = 0
+ 	share.Username = claims.Username
++	// Browser-created NAS shares always provide download access; name comes from the selection.
++	share.Scope = dataprovider.ShareScopeRead
++	if len(share.Paths) > 0 {
++		share.Name = path.Base(share.Paths[0])
++		if len(share.Paths) > 1 {
++			share.Name = fmt.Sprintf("%s 等 %d 个项目", share.Name, len(share.Paths))
++		}
++		nameRunes := []rune(share.Name)
++		if len(nameRunes) > 255 {
++			share.Name = string(nameRunes[:255])
++		}
++	}
+ 	if share.Password == "" {
+ 		if slices.Contains(claims.Permissions, sdk.WebClientShareNoPasswordDisabled) {
+ 			s.renderAddUpdateSharePage(w, r, share,
+@@ -1521,9 +1573,9 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
+ 	}
+ 	err = dataprovider.AddShare(share, claims.Username, ipAddr, claims.Role)
+ 	if err == nil {
+-		http.Redirect(w, r, webClientSharesPath, http.StatusSeeOther)
++		http.Redirect(w, r, webClientSharesPath+"?created="+url.QueryEscape(share.ShareID), http.StatusSeeOther)
+ 	} else {
+-		s.renderAddUpdateSharePage(w, r, share, util.NewI18nError(err, util.I18nErrorShareGeneric), true)
++		s.renderAddUpdateSharePage(w, r, share, airShareCreationError(err, r), true)
+ 	}
+ }
+ 
+@@ -1588,11 +1640,14 @@ func (s *httpdServer) handleClientUpdateSharePost(w http.ResponseWriter, r *http
+ 		), false)
+ 		return
+ 	}
+-	err = dataprovider.UpdateShare(updatedShare, claims.Username, ipAddr, claims.Role)
++	newID:=strings.TrimSpace(r.Form.Get("custom_id"))
++ if newID!="" && newID!=shareID {
++  if err=airAssignShareID(updatedShare,r);err==nil {err=dataprovider.RenameShare(shareID,updatedShare,claims.Username,ipAddr,claims.Role)}
++ } else {err = dataprovider.UpdateShare(updatedShare, claims.Username, ipAddr, claims.Role)}
+ 	if err == nil {
+ 		http.Redirect(w, r, webClientSharesPath, http.StatusSeeOther)
+ 	} else {
+-		s.renderAddUpdateSharePage(w, r, updatedShare, util.NewI18nError(err, util.I18nErrorShareGeneric), false)
++		s.renderAddUpdateSharePage(w, r, updatedShare, util.NewI18nError(err, err.Error()), false)
+ 	}
+ }
+ 
+@@ -1604,12 +1659,24 @@ func getAllShares(w http.ResponseWriter, r *http.Request) {
+ 		return
+ 	}
+ 
++	owner, ownerErr := dataprovider.GetUserWithGroupSettings(claims.Username, "")
++	if ownerErr == nil {
++		defer owner.CloseFs()
++	}
+ 	dataGetter := func(limit, offset int) ([]byte, int, error) {
+ 		shares, err := dataprovider.GetShares(limit, offset, dataprovider.OrderASC, claims.Username)
+ 		if err != nil {
+ 			return nil, 0, err
+ 		}
+-		data, err := json.Marshal(shares)
++		items := make([]nasShareRow, 0, len(shares))
++		for _, share := range shares {
++			directory := false
++			if ownerErr == nil && len(share.Paths) == 1 {
++				directory = nasSharedDirectory(&owner, share.Paths[0])
++			}
++			items = append(items, nasShareRow{Share: share, Directory: directory})
++		}
++		data, err := json.Marshal(items)
+ 		return data, len(shares), err
+ 	}
+ 
+@@ -1702,7 +1769,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+ 		s.renderClientProfilePage(w, r, util.NewI18nError(err, util.I18nError500Message))
+ 		return
+ 	}
+-	s.renderClientMessagePage(w, r, util.I18nProfileTitle, http.StatusOK, nil, util.I18nProfileUpdated)
++	http.Redirect(w, r, webClientProfilePath+"?saved=1", http.StatusSeeOther)
+ }
+ 
+ func (s *httpdServer) handleWebClientMFA(w http.ResponseWriter, r *http.Request) {
+@@ -2207,7 +2274,7 @@ func executeDeleteTask(conn *Connection, task webTaskData) {
+ 	go keepAliveTask(task, done, 2*time.Minute)
+ 
+ 	status := http.StatusOK
+-	if err := conn.RemoveAll(task.Path); err != nil {
++	if err := nasRecycleMove(conn, task.Path); err != nil {
+ 		status = getMappedStatusCode(err)
+ 	}
+ 

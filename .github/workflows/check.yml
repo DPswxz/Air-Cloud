@@ -24,6 +24,8 @@ jobs:
         run: node tests/session.integration.cjs
       - name: Verify custom and live folder shares
         run: node tests/shares.integration.cjs
+      - name: Verify portable NAS extensions
+        run: node tests/nas.integration.cjs
       - name: Backup and restore data round trip
         run: |
           docker compose stop

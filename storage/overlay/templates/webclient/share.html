@@ -1,0 +1,57 @@
+<!--
+Copyright (C) 2023 Nicola Murino
+
+This WebUI uses the KeenThemes Bootstrap Templates:
+
+https://keenthemes.com/bootstrap-templates
+
+KeenThemes HTML/CSS/JS components are allowed for use only within the
+SFTPGo product and restricted to be used in a resealable HTML template
+that can compete with KeenThemes products anyhow.
+
+This WebUI is allowed for use only within the SFTPGo product and
+therefore cannot be used in derivative works/products without an
+explicit grant from the SFTPGo Team (support@sftpgo.com).
+-->
+{{template "base" .}}
+{{- define "page_body"}}
+<div class="card shadow-sm nas-share-card">
+ <div class="card-header"><h3 class="card-title">{{if .IsAdd}}创建下载分享{{else}}分享设置{{end}}</h3></div>
+ <div class="card-body">
+ {{- template "errmsg" .Error}}
+ {{if .Share.Paths}}
+ <form id="share_form" action="{{.CurrentURL}}" method="POST" autocomplete="off">
+  <div class="nas-share-file"><i class="ki-solid ki-folder fs-1 text-primary"></i><div><strong id="nas-share-name">{{.Share.Name}}</strong><p>{{len .Share.Paths}} 个项目 · {{if eq .Share.Scope 1}}仅供下载{{else}}保留已有分享权限{{end}}</p></div></div>
+  <input type="hidden" name="name" id="name" value="{{.Share.Name}}">
+  <input type="hidden" name="scope" value="{{.Share.Scope}}">
+  {{range .Share.Paths}}<input type="hidden" name="paths" value="{{.}}">{{end}}
+  <input type="hidden" name="allowed_ip" value="{{.Share.GetAllowedFromAsString}}">
+  <input type="hidden" name="description" value="{{.Share.Description}}">
+  <div class="mb-6"><label for="custom_id" class="form-label">自定义分享后缀 <span class="text-muted">（可选）</span></label><input id="custom_id" name="custom_id" class="form-control" maxlength="64" pattern="[A-Za-z0-9_-]{1,64}" value="{{.Share.ShareID}}"  placeholder="例如：1、photos、family-2026"></div>
+  <div class="nas-share-fields">
+   <div><label for="password" class="form-label">访问密码 <span class="text-muted">（可选）</span></label><input id="password" type="password" class="form-control" name="password" autocomplete="new-password" value="{{.Share.Password}}" placeholder="留空，无需密码"><div class="form-text">设置后，对方需输入密码才能下载。</div></div>
+   <div><label for="id_expiration" class="form-label">有效期 <span class="text-muted">（可选）</span></label><input id="id_expiration" type="date" class="form-control"><div class="form-text">留空表示长期有效。</div></div>
+  </div>
+  <details class="nas-share-more" {{if gt .Share.MaxTokens 0}}open{{end}}><summary>下载次数限制</summary><div class="mt-3"><label for="max_tokens" class="form-label">最多下载次数</label><input id="max_tokens" type="number" min="0" class="form-control" name="max_tokens" value="{{.Share.MaxTokens}}"><div class="form-text">0 表示不限次数。</div></div></details>
+  <div class="nas-share-actions"><a id="air-share-return" href="{{.SharesURL}}" target="_top" class="btn btn-light">返回分享列表</a><button type="submit" id="form_submit" class="btn btn-primary"><span class="indicator-label">{{if .IsAdd}}创建分享{{else}}保存设置{{end}}</span><span class="indicator-progress">保存中…<span class="spinner-border spinner-border-sm ms-2"></span></span></button></div>
+  <input type="hidden" name="expiration_date" id="hidden_start_datetime" value="">
+  <input type="hidden" name="_form_token" value="{{.CSRFToken}}">
+ </form>
+ {{else}}
+ <p class="text-muted">请先在文件列表中选择要分享的文件或文件夹。</p><a class="btn btn-primary" href="{{.FilesURL}}">选择文件</a>
+ {{end}}
+ </div>
+</div>
+{{- end}}
+{{- define "extra_js"}}
+<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
+const returnLink=document.getElementById('air-share-return');if(returnLink)returnLink.addEventListener('click',function(event){event.preventDefault();event.stopImmediatePropagation();window.top.location.assign(returnLink.href);});
+$(document).on('i18nshow',function(){
+ const form=document.getElementById('share_form');if(!form||form.dataset.nasInitialized)return;form.dataset.nasInitialized='1';
+ const names=Array.from(form.querySelectorAll('input[name="paths"]')).map(input=>input.value.replace(/\\/g,'/').split('/').filter(Boolean).pop()||'文件');
+ const name=form.querySelector('#name');if(!name.value)name.value=names.length===1?names[0]:names[0]+' 等 '+names.length+' 个项目';document.getElementById('nas-share-name').textContent=name.value;
+ const expiration=document.getElementById('id_expiration');const expiresAt=Number('{{.Share.ExpiresAt}}');if(expiresAt>0)expiration.value=moment(expiresAt).format('YYYY-MM-DD');
+ form.addEventListener('submit',function(){document.getElementById('hidden_start_datetime').value=expiration.value?moment(expiration.value+'T23:59:59').utc().format('YYYY-MM-DD HH:mm:ss'):'';const button=document.getElementById('form_submit');button.setAttribute('data-kt-indicator','on');button.disabled=true;});
+});
+</script>
+{{- end}}

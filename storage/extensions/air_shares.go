@@ -24,7 +24,7 @@ func airAssignShareID(share *dataprovider.Share, r *http.Request) error {
 		return errors.New("分享后缀只能使用 1–64 位字母、数字、下划线或短横线")
 	}
 	switch strings.ToLower(id) {
-	case "web", "api", "static", "healthz", "nas-login", "lan-check":
+	case "web", "api", "static", "healthz", "nas-login", "lan-check", "forgot-password", "speedtest":
 		return errors.New("这个分享后缀已被占用，请换一个")
 	}
 	_, err := dataprovider.ShareExists(id, "")

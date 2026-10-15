@@ -1,7 +1,7 @@
 name: browsernas
 services:
   storage:
-    image: air-cloud-storage:2.7.6-shares-v2
+    image: air-cloud-storage:2.7.6-nas-v3
     build:
       context: .
       dockerfile: storage/Dockerfile
@@ -9,11 +9,22 @@ services:
     environment:
       SFTPGO_HTTPD__BINDINGS__0__PORT: "8080"
       SFTPGO_HTTPD__BINDINGS__0__ADDRESS: "0.0.0.0"
+      SFTPGO_DATA_PROVIDER__BACKUPS_PATH: /srv/sftpgo/backups
       SFTPGO_DATA_PROVIDER__USERS_BASE_DIR: /srv/sftpgo/data
       SFTPGO_COMMON__DEFENDER__ENABLED: "true"
       SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN: "true"
       SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT: "true"
+      SFTPGO_HTTPD__BINDINGS__0__LANGUAGES: zh-CN
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_ADMIN__NAME: Air Cloud 管理中心
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_ADMIN__SHORT_NAME: Air Cloud
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_ADMIN__FAVICON_PATH: /air-cloud.svg
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_ADMIN__LOGO_PATH: /air-cloud.svg
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__NAME: Air Cloud
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__SHORT_NAME: Air Cloud
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__FAVICON_PATH: /air-cloud.svg
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__LOGO_PATH: /air-cloud.svg
       SFTPGO_HTTPD__COOKIE_LIFETIME: "43200"
+      SFTPGO_COMMON__UPLOAD_MODE: "1"
     volumes:
       - settings:/var/lib/sftpgo
       - files:/srv/sftpgo
