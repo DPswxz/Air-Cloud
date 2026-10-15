@@ -3,6 +3,8 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: compose.yaml:tests/compose.ci.yaml
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -10,12 +12,16 @@ jobs:
           node-version: '22'
       - run: npm test
       - run: docker compose config --quiet
-      - run: sh -n start.sh scripts/backup.sh
+      - run: sh -n start.sh scripts/backup.sh storage/entrypoint.sh
+      - name: Build session-enabled storage
+        run: docker compose build storage
       - name: Real container smoke test
         run: |
           docker compose up -d --wait --wait-timeout 240
           curl --fail http://127.0.0.1:8088/healthz
           curl --fail http://127.0.0.1:8088/web/admin/setup
+      - name: Verify remembered login with real backend
+        run: node tests/session.integration.cjs
       - name: Backup and restore data round trip
         run: |
           docker compose stop

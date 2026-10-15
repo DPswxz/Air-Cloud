@@ -2,7 +2,7 @@
 
 把闲置电脑变成自己的浏览器 NAS。Windows 双击启动，Linux/macOS 一条命令部署；文件、账号和配置保存在自己的电脑上，不依赖项目作者的服务器。
 
-这是现有单机 NAS 的**可移植部署版**：使用官方 SFTPGo v2.7.6 和独立的 Air Cloud 入口。支持浏览器上传下载、文件夹管理、分享链接、多用户、配额和两步验证。原单机版本依赖私有后端的统一账号识别、管理员全部文件视图、头像与回收站扩展未移植；不包含原机器的数据库、密钥、VHDX 或公网中转配置。
+这是现有单机 NAS 的**可移植部署版**：基于 SFTPGo v2.7.6，加入 30 天网页登录补丁和独立的 Air Cloud 入口。支持浏览器上传下载、文件夹管理、分享链接、多用户、配额和两步验证。原单机版本依赖私有后端的统一账号识别、管理员全部文件视图、头像与回收站扩展未移植；不包含原机器的数据库、密钥、VHDX 或公网中转配置。
 
 ## 快速开始
 
@@ -10,7 +10,7 @@
 
 1. 安装并启动 [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)，启用 WSL 2 / Linux containers。需要系统支持虚拟化；初次安装可能需要重启。
 2. [下载项目 ZIP](https://github.com/DPswxz/Air-Cloud/archive/refs/heads/main.zip)，解压到准备长期保留的目录。
-3. 双击 **`start.cmd`**。脚本会检查 Docker、下载固定版本镜像、启动服务并打开浏览器。
+3. 双击 **`start.cmd`**。脚本会检查 Docker、下载固定版本基础镜像并自动构建文件服务、启动服务并打开浏览器。
 4. 点击“初始化 / 管理后台”，创建管理员，再添加至少一个文件用户。管理员与文件用户是不同账号。
 
 ### Linux / macOS
@@ -23,7 +23,7 @@ cd Air-Cloud
 sh start.sh
 ```
 
-打开 **http://localhost:8088**。首次拉取镜像需要网络；启动后访问文件不需要连接项目作者的服务。Linux 需要当前用户具有 Docker 使用权限。支持官方镜像提供的 amd64/arm64 主机，不支持 32 位 Windows、旧版 Windows 或无容器环境的一键原生安装。
+打开 **http://localhost:8088**。首次拉取镜像及编译文件服务需要网络和数分钟时间；启动后访问文件不需要连接项目作者的服务。Linux 需要当前用户具有 Docker 使用权限。支持官方镜像提供的 amd64/arm64 主机，不支持 32 位 Windows、旧版 Windows 或无容器环境的一键原生安装。
 
 ## 初始化与共享
 
@@ -41,6 +41,14 @@ NAS_PORT=8088
 重新运行启动脚本，家人即可通过 `http://主机局域网IP:8088` 访问。Windows 防火墙如需放行，只针对家庭/专用网络开放选定端口；本项目不自动更改防火墙或路由器设置。端口被占用时修改 `NAS_PORT`。
 
 公网访问推荐 VPN（如 Tailscale）或自行配置 HTTPS 反向代理，不要把 HTTP 8088 直接暴露到公网。分享链接使用创建分享时访问的主机地址：需要外网分享时，应通过自己的 HTTPS 域名登录后创建分享。原机器的域名、FRP、VPS 不随项目提供。主机关机或断网后文件不可访问；应关闭自动睡眠并确保磁盘空间充足。
+
+## 30 天免登录
+
+浏览器登录成功后自动记住登录状态，有效期为 **30 天**（管理员和文件账号均适用）。关闭浏览器、重启主机或文件服务后，使用同一浏览器、同一访问地址仍可继续访问，无需再次输入密码。只在 HttpOnly Cookie 中保存签名凭证，不保存明文密码；REST API 和分享链接认证的有效期不延长。
+
+30 天从这次登录算起，不无限续期；到期后重新登录。点击“退出登录”会清除凭证并立即使该凭证失效，清理浏览器 Cookie 或使用无痕窗口也需要重新登录。服务端签名密钥自动生成并保存在数据库同一数据卷，备份恢复时一并保留。轮换或删除此密钥可强制所有浏览器重新登录。请勿把密钥加入 Git。
+
+已有安装更新本项目后执行 `docker compose build storage`，再执行 `docker compose up -d --wait --wait-timeout 180`。更新前登录的旧凭证不会自动变成 30 天，需要重新登录一次。公网使用应启用 HTTPS。
 
 ## 数据与容量
 
@@ -78,4 +86,4 @@ Linux/macOS：执行 `sh scripts/backup.sh`。
 
 ## 许可与致谢
 
-本项目以 [AGPL-3.0](LICENSE) 发布。文件服务由 [SFTPGo / Nicola Murino 及贡献者](https://github.com/drakkan/sftpgo) 提供，使用未修改的官方 v2.7.6 镜像；[对应源代码](https://github.com/drakkan/sftpgo/tree/v2.7.6)。请保留 [附加声明](NOTICE)。Air Cloud 是独立项目，不代表获得 SFTPGo 作者背书。Node.js 与 Alpine 镜像遵循各自许可证。
+本项目以 [AGPL-3.0](LICENSE) 发布。文件服务由 [SFTPGo / Nicola Murino 及贡献者](https://github.com/drakkan/sftpgo) 提供，基于官方 v2.7.6 镜像，重新编译了网页登录期限补丁；[上游对应源代码](https://github.com/drakkan/sftpgo/tree/62ae9ba3957e9ed52b44a4f885e805e2d7b35972) + [本项目补丁](storage/month-session.patch) + [可复现构建步骤](storage/Dockerfile)。请保留 [附加声明](NOTICE)。Air Cloud 是独立项目，不代表获得 SFTPGo 作者背书。Node.js 与 Alpine 镜像遵循各自许可证。

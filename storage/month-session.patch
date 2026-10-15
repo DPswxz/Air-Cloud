@@ -1,0 +1,14 @@
+diff --git a/internal/httpd/auth_utils.go b/internal/httpd/auth_utils.go
+--- a/internal/httpd/auth_utils.go
++++ b/internal/httpd/auth_utils.go
+@@ -72,7 +72,9 @@ func updateTokensDuration(api, cookie, share int) {
+ 	if isTokenDurationValid(api) {
+ 		apiTokenDuration = time.Duration(api) * time.Minute
+ 	}
+-	if isTokenDurationValid(cookie) {
++	// BrowserNAS: allow persistent browser sessions for up to 30 days.
++	// API/share limits and the absolute refresh cap remain unchanged.
++	if cookie >= 1 && cookie <= 30*24*60 {
+ 		cookieTokenDuration = time.Duration(cookie) * time.Minute
+ 		cookieRefreshThreshold = cookieTokenDuration / 2
+ 		if cookieTokenDuration > csrfTokenDuration {

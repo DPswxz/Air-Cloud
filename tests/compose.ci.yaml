@@ -1,0 +1,7 @@
+# Test fixtures only. Never include this override in a production deployment.
+services:
+  storage:
+    environment:
+      SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN: "true"
+      SFTPGO_DEFAULT_ADMIN_USERNAME: integration-admin
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: Integration-Only-Admin-7x!r

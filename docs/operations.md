@@ -46,8 +46,8 @@ docker compose up -d --wait --wait-timeout 180
 ## 升级与回退
 
 1. 用备份脚本保存完整数据库和文件，并把归档复制到另一台设备。
-2. 查看 SFTPGo 的版本说明，再修改 `compose.yaml` 中的固定镜像版本。Node.js 基础镜像亦应定期更新。
-3. 执行 `docker compose pull` 和 `docker compose up -d --wait --wait-timeout 180`。
+2. 查看 SFTPGo 的版本说明，同步更新 `storage/Dockerfile` 的上游源码提交、归档校验和、运行镜像版本及补丁；修改 `compose.yaml` 的本地镜像标签。Node.js 基础镜像亦应定期更新。
+3. 执行 `docker compose build --pull storage`、`docker compose pull portal` 和 `docker compose up -d --wait --wait-timeout 180`。
 4. 验证登录、上传下载、分享及用户权限。
 
 数据库可能随升级迁移；回退时需要原版本镜像加升级前的完整备份，不能只改回镜像标签。
