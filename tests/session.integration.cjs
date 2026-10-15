@@ -7,6 +7,8 @@ async function main() {
   const tokenResponse = await fetch(base+'/api/v2/token', {headers:{Authorization:'Basic '+Buffer.from('integration-admin:Integration-Only-Admin-7x!r').toString('base64')}});
   assert.equal(tokenResponse.status,200);
   const {access_token} = await tokenResponse.json();
+  const apiClaims = JSON.parse(Buffer.from(access_token.split('.')[1],'base64url'));
+  assert.equal(apiClaims.exp-apiClaims.iat,20*60,'REST API tokens keep their short lifetime');
   const create = await fetch(base+'/api/v2/users', {method:'POST',headers:{Authorization:'Bearer '+access_token,'Content-Type':'application/json'},body:JSON.stringify({username:'session-test',password,status:1,permissions:{'/':['*']}})});
   assert.equal(create.status,201,await create.text());
   const login = await fetch(base+'/web/client/login');
