@@ -220,7 +220,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
 <script src="{{.StaticURL}}/air-settings.js?v=20261015-3"></script>
 <script src="{{.StaticURL}}/air-capacity.js?v=20261015-2"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261015-3"></script>
-{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261016-permission1"></script>{{end}}
+{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261016-tree1"></script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>AirTransfers.configure({share:{{if .ShareOwner}}true{{else}}false{{end}},manifestURL:'{{if .ShareOwner}}{{.DownloadURL}}{{end}}'.replace(/partial$/,'manifest'),enabled:{{if .FileURL}}true{{else}}false{{end}},owner:{{if .ShareOwner}}'share:{{.DownloadURL}}'{{else}}'{{.LoggedUser.Username}}'{{end}},csrf:'{{.CSRFToken}}',progressURL:'{{.ProfileURL}}'.replace(/\/profile$/,'/download-progress'),pingURL:'{{.PingURL}}'});</script>
 
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.js"></script>
