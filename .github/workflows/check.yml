@@ -22,6 +22,8 @@ jobs:
           curl --fail http://127.0.0.1:8088/web/admin/setup
       - name: Verify remembered login with real backend
         run: node tests/session.integration.cjs
+      - name: Verify custom and live folder shares
+        run: node tests/shares.integration.cjs
       - name: Backup and restore data round trip
         run: |
           docker compose stop

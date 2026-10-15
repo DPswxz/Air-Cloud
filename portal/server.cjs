@@ -23,6 +23,14 @@ const server = http.createServer(async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) return send(405, 'text/plain', 'Method not allowed');
     return send(200, pathname === '/' ? 'text/html; charset=utf-8' : 'image/svg+xml', pathname === '/' ? home : logo);
   }
+  const shortShare = /^\/([A-Za-z0-9_-]{1,64})$/.exec(pathname);
+  const reserved = new Set(['web','api','static','healthz','nas-login','lan-check']);
+  if (shortShare && !reserved.has(shortShare[1].toLowerCase())) {
+    if (!['GET','HEAD'].includes(req.method)) return send(405,'text/plain','Method not allowed');
+    // Redirect keeps password-protected share cookies scoped to their native path.
+    res.writeHead(302, {Location:'/web/client/pubshares/'+shortShare[1]+'/view'+new URL(req.url,'http://nas').search,'Cache-Control':'no-store'});
+    return res.end();
+  }
   // Never trust forwarded headers supplied by an arbitrary browser.
   const headers = {...req.headers};
   for (const key of Object.keys(headers)) {

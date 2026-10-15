@@ -42,6 +42,14 @@ NAS_PORT=8088
 
 公网访问推荐 VPN（如 Tailscale）或自行配置 HTTPS 反向代理，不要把 HTTP 8088 直接暴露到公网。分享链接使用创建分享时访问的主机地址：需要外网分享时，应通过自己的 HTTPS 域名登录后创建分享。原机器的域名、FRP、VPS 不随项目提供。主机关机或断网后文件不可访问；应关闭自动睡眠并确保磁盘空间充足。
 
+## 自定义分享链接与文件夹分享
+
+创建分享时可填写“自定义分享后缀”，例如 `1`，复制的分享链接就是 `https://你的域名/1`。支持 1–64 位字母、数字、下划线和短横线，留空自动生成；后缀在所有用户之间唯一，已占用时会提示更换。已有分享后缀不可修改，需要其他后缀时请新建分享；旧链接继续有效。
+
+“复制分享链接”使用复制图标，“打开分享页面”使用打开图标。短链接打开后会跳转到原生分享页面，以保持访问密码 Cookie 的作用范围。
+
+分享单个文件夹时，接收者可以浏览子目录、直接下载文件，也能选中部分文件打包下载。分享始终指向原文件夹，新增、修改、删除会同步反映，页面每 10 秒刷新列表（正在选择文件时暂停自动刷新）；文件不会复制成静态快照。原有密码、有效期和下载次数限制继续生效。
+
 ## 30 天免登录
 
 浏览器登录成功后自动记住登录状态，有效期为 **30 天**（管理员和文件账号均适用）。关闭浏览器、重启主机或文件服务后，使用同一浏览器、同一访问地址仍可继续访问，无需再次输入密码。只在 HttpOnly Cookie 中保存签名凭证，不保存明文密码；REST API 和分享链接认证的有效期不延长。
@@ -86,4 +94,4 @@ Linux/macOS：执行 `sh scripts/backup.sh`。
 
 ## 许可与致谢
 
-本项目以 [AGPL-3.0](LICENSE) 发布。文件服务由 [SFTPGo / Nicola Murino 及贡献者](https://github.com/drakkan/sftpgo) 提供，基于官方 v2.7.6 镜像，重新编译了网页登录期限补丁；[上游对应源代码](https://github.com/drakkan/sftpgo/tree/62ae9ba3957e9ed52b44a4f885e805e2d7b35972) + [本项目补丁](storage/month-session.patch) + [可复现构建步骤](storage/Dockerfile)。请保留 [附加声明](NOTICE)。Air Cloud 是独立项目，不代表获得 SFTPGo 作者背书。Node.js 与 Alpine 镜像遵循各自许可证。
+本项目以 [AGPL-3.0](LICENSE) 发布。文件服务由 [SFTPGo / Nicola Murino 及贡献者](https://github.com/drakkan/sftpgo) 提供，基于官方 v2.7.6 镜像，重新编译了网页登录期限及分享功能补丁；[上游对应源代码](https://github.com/drakkan/sftpgo/tree/62ae9ba3957e9ed52b44a4f885e805e2d7b35972) + [本项目补丁与扩展源码](storage) + [可复现构建步骤](storage/Dockerfile)。请保留 [附加声明](NOTICE)。Air Cloud 是独立项目，不代表获得 SFTPGo 作者背书。Node.js 与 Alpine 镜像遵循各自许可证。

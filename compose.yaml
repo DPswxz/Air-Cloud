@@ -1,7 +1,7 @@
 name: browsernas
 services:
   storage:
-    image: air-cloud-storage:2.7.6-session30-v1
+    image: air-cloud-storage:2.7.6-shares-v2
     build:
       context: .
       dockerfile: storage/Dockerfile

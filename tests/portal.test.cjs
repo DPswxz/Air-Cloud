@@ -36,6 +36,13 @@ test('binary uploads stream without corruption',async()=>{
   const r=await fetch(base+'/web/client/upload',{method:'POST',body});
   assert.deepEqual(Buffer.from(await r.arrayBuffer()),body);
 });
+test('short shares map to the protected native share page',async()=>{
+  const response=await fetch(base+'/1?path=%2F',{redirect:'manual'});
+  assert.equal(response.status,302);
+  assert.equal(response.headers.get('location'),'/web/client/pubshares/1/view?path=%2F');
+  const reserved=await (await fetch(base+'/api')).json();
+  assert.equal(reserved.url,'/api');
+});
 test('unavailable upstream returns 503',async()=>{
   await new Promise(r=>mock.close(r));
   const r=await fetch(base+'/web/client/');assert.equal(r.status,503);
