@@ -1,0 +1,13 @@
+.env
+data/
+backups/
+*.log
+*.db
+*.db-*
+*.vhd*
+*.exe
+node_modules/
+*.pem
+*.key
+secrets/
+compose.override.yaml

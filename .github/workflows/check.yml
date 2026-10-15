@@ -1,0 +1,35 @@
+name: Validate platform
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: docker compose config --quiet
+      - run: sh -n start.sh scripts/backup.sh
+      - name: Real container smoke test
+        run: |
+          docker compose up -d --wait --wait-timeout 240
+          curl --fail http://127.0.0.1:8088/healthz
+          curl --fail http://127.0.0.1:8088/web/admin/setup
+      - name: Backup and restore data round trip
+        run: |
+          docker compose stop
+          mkdir -p backups
+          docker compose --profile tools run --rm --no-deps tools sh -c 'echo persistence-check > /source/files/smoke.txt'
+          sh scripts/backup.sh
+          docker compose stop
+          archive=$(find backups -name '*.tar.gz' -print -quit)
+          docker compose --profile tools run --rm --no-deps tools rm /source/files/smoke.txt
+          docker compose --profile tools run --rm --no-deps tools tar -xzpf "/backup/$(basename "$archive")" -C /source
+          docker compose --profile tools run --rm --no-deps tools grep -qx persistence-check /source/files/smoke.txt
+          docker compose up -d --wait --wait-timeout 180
+          curl --fail http://127.0.0.1:8088/healthz
+      - if: always()
+        run: docker compose logs --tail 100
+      - if: always()
+        run: docker compose down

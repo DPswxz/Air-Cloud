@@ -1,0 +1,62 @@
+name: browsernas
+services:
+  storage:
+    image: drakkan/sftpgo:v2.7.6
+    restart: unless-stopped
+    environment:
+      SFTPGO_HTTPD__BINDINGS__0__PORT: "8080"
+      SFTPGO_HTTPD__BINDINGS__0__ADDRESS: "0.0.0.0"
+      SFTPGO_DATA_PROVIDER__USERS_BASE_DIR: /srv/sftpgo/data
+      SFTPGO_COMMON__DEFENDER__ENABLED: "true"
+      SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN: "true"
+      SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT: "true"
+    volumes:
+      - settings:/var/lib/sftpgo
+      - files:/srv/sftpgo
+    networks: [backend]
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  portal:
+    image: node:22.22.0-alpine
+    user: node
+    working_dir: /app
+    command: [node, server.cjs]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      NAS_UPSTREAM: http://storage:8080
+    volumes:
+      - ./portal:/app:ro
+    ports:
+      - "${NAS_BIND:-127.0.0.1}:${NAS_PORT:-8088}:8088"
+    depends_on: [storage]
+    networks: [backend, frontend]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8088/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  tools:
+    image: alpine:3.23
+    profiles: [tools]
+    network_mode: none
+    volumes:
+      - settings:/source/settings
+      - files:/source/files
+      - ./backups:/backup
+    entrypoint: []
+    command: ["true"]
+volumes:
+  settings:
+  files:
+networks:
+  backend:
+    internal: true
+  frontend:

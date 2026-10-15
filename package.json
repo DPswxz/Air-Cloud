@@ -1,0 +1,9 @@
+{
+  "name": "browsernas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Turn a spare computer into a personal browser-based NAS",
+  "scripts": {"test": "node --test tests/*.test.cjs"},
+  "engines": {"node": ">=22"},
+  "license": "AGPL-3.0-only"
+}
