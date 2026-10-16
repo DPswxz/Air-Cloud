@@ -91,9 +91,9 @@ body{background:var(--nas-page)!important;color:var(--nas-text);font-family:Inte
 
 .nas-files-card>.card-header .air-directory-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;padding:0!important;margin:0 8px 0 0!important;flex-shrink:0}.air-directory-icon svg{margin:0!important;pointer-events:none}.air-directory-icon[aria-disabled="true"]{opacity:.35;pointer-events:none}
 
-.nas-files-card>.card-header{min-height:0!important;padding-top:14px!important;padding-bottom:6px!important}.nas-files-card>.card-body{padding-top:8px!important}.nas-files-card .air-directory-icon{background:color-mix(in srgb,var(--nas-accent) 9%,var(--nas-surface))!important;color:var(--nas-accent)!important;border:0!important;box-shadow:none!important}.nas-files-card .air-directory-icon:hover,.nas-files-card .air-directory-icon:focus{background:color-mix(in srgb,var(--nas-accent) 16%,var(--nas-surface))!important;color:var(--nas-accent)!important}.nas-files-card .air-directory-icon svg{width:18px!important;height:18px!important;display:block;flex-shrink:0;color:inherit!important;fill:none!important;stroke:currentColor!important}.nas-files-card .air-directory-icon svg path{fill:none!important;stroke:currentColor!important}.air-directory-icon:focus-visible{outline:2px solid var(--nas-accent);outline-offset:2px}
+.nas-files-card>.card-header{min-height:0!important;padding-top:14px!important;padding-bottom:6px!important}.nas-files-card>.card-body{padding-top:8px!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon{background:color-mix(in srgb,var(--nas-accent) 9%,var(--nas-surface))!important;color:var(--nas-accent)!important;border:0!important;box-shadow:none!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon:hover,:is(.nas-files-card,.air-recycle-card) .air-directory-icon:focus{background:color-mix(in srgb,var(--nas-accent) 16%,var(--nas-surface))!important;color:var(--nas-accent)!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon svg{width:18px!important;height:18px!important;display:block;flex-shrink:0;color:inherit!important;fill:none!important;stroke:currentColor!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon svg path{fill:none!important;stroke:currentColor!important}.air-directory-icon:focus-visible{outline:2px solid var(--nas-accent);outline-offset:2px}
 
-.nas-files-card :is(#air-refresh-files,#air-parent-directory):is(:hover,:focus,:active){background:color-mix(in srgb,var(--nas-accent) 16%,var(--nas-surface))!important;color:var(--nas-accent)!important}
+:is(.nas-files-card,.air-recycle-card) :is(#air-refresh-files,#air-parent-directory,#air-recycle-refresh):is(:hover,:focus,:active){background:color-mix(in srgb,var(--nas-accent) 16%,var(--nas-surface))!important;color:var(--nas-accent)!important}
 
 
 /* Compact transfer tree; icons inherit the active light/dark theme. */
@@ -218,8 +218,8 @@ details>summary::-webkit-details-marker{display:none}details:not(.nas-avatar-pic
 .air-recycle-card tr.air-recycle-selected:hover{background:transparent!important}
 
 /* Recycle controls and vertical rhythm follow the file toolbar. */
-.air-recycle-card #air-recycle-refresh,.air-recycle-card [data-action=restore].btn{background:#e8f1ff!important;border-color:#e8f1ff!important;color:#3478f6!important}
-.air-recycle-card #air-recycle-refresh:hover,.air-recycle-card [data-action=restore].btn:hover{background:#dceaff!important;border-color:#dceaff!important;color:#2465da!important}
+.air-recycle-card [data-action=restore].btn{background:#e8f1ff!important;border-color:#e8f1ff!important;color:#3478f6!important}
+.air-recycle-card [data-action=restore].btn:hover{background:#dceaff!important;border-color:#dceaff!important;color:#2465da!important}
 .air-recycle-tools{margin-bottom:14px!important}
 :is(.air-shares-card,.air-recycle-card)>.card-header>.card-title{font-size:24px!important}
 
@@ -257,3 +257,10 @@ img[src*="/air-cloud.svg"]{content:url("/static/air-cloud-material.svg")}
 .nas-files-card #file_manager_list thead .dt-column-header{display:inline-flex!important;width:auto!important;vertical-align:middle!important}
 .nas-files-card #file_manager_list thead th{white-space:nowrap}
 .nas-files-card #file_manager_list thead th:is(.dt-ordering-asc,.dt-ordering-desc)::after{vertical-align:middle!important;top:auto!important;bottom:auto!important;margin-top:0!important;margin-bottom:0!important}
+.nas-avatar-picker .nas-avatar-editor>button{align-self:flex-end!important}
+.nas-info-field{display:grid;grid-template-columns:minmax(72px,1fr) minmax(0,3fr) auto;align-items:center;gap:12px;margin:0 0 16px}
+.nas-info-field>.form-label{margin:0}.nas-info-field>.form-control{min-width:0;width:100%}.nas-info-field>.btn{justify-self:end}
+@media(max-width:575px){.nas-info-field{grid-template-columns:54px minmax(0,1fr) auto;gap:8px}.nas-info-field>.btn{padding-left:10px!important;padding-right:10px!important}}
+/* Separate the disclosure border from surrounding profile content. */
+.nas-personal-card .nas-personal-advanced{margin-top:28px!important;margin-bottom:16px!important}
+@media(max-width:575px){.nas-personal-card .nas-personal-advanced{margin-top:24px!important}}

@@ -1,4 +1,5 @@
 diff --git a/internal/dataprovider/bolt.go b/internal/dataprovider/bolt.go
+index aa86810..e766e50 100644
 --- a/internal/dataprovider/bolt.go
 +++ b/internal/dataprovider/bolt.go
 @@ -3965,3 +3965,19 @@ func updateBoltDatabaseVersion(dbHandle *bolt.DB, version int) error {
@@ -22,6 +23,7 @@ diff --git a/internal/dataprovider/bolt.go b/internal/dataprovider/bolt.go
 + })
 +}
 diff --git a/internal/dataprovider/dataprovider.go b/internal/dataprovider/dataprovider.go
+index 677e225..ffd172d 100644
 --- a/internal/dataprovider/dataprovider.go
 +++ b/internal/dataprovider/dataprovider.go
 @@ -5004,3 +5004,11 @@ func getCmdOutput(cmd *exec.Cmd, sender string) ([]byte, error) {
@@ -37,6 +39,7 @@ diff --git a/internal/dataprovider/dataprovider.go b/internal/dataprovider/datap
 + return err
 +}
 diff --git a/internal/dataprovider/user.go b/internal/dataprovider/user.go
+index 8f0815b..d0b50f1 100644
 --- a/internal/dataprovider/user.go
 +++ b/internal/dataprovider/user.go
 @@ -1330,9 +1330,21 @@ func (u *User) MustSetSecondFactorForProtocol(protocol string) bool {
@@ -62,6 +65,7 @@ diff --git a/internal/dataprovider/user.go b/internal/dataprovider/user.go
  func (u *User) GetBandwidthForIP(clientIP, connectionID string) (int64, int64) {
  	if len(u.Filters.BandwidthLimits) > 0 {
 diff --git a/internal/httpd/api_http_user.go b/internal/httpd/api_http_user.go
+index ae54594..3686cce 100644
 --- a/internal/httpd/api_http_user.go
 +++ b/internal/httpd/api_http_user.go
 @@ -289,6 +289,9 @@ func doUploadFile(w http.ResponseWriter, r *http.Request, connection *Connection
@@ -94,6 +98,7 @@ diff --git a/internal/httpd/api_http_user.go b/internal/httpd/api_http_user.go
  		sendAPIResponse(w, r, err, fmt.Sprintf("Unable to delete file %q", name), getMappedStatusCode(err))
  		return
 diff --git a/internal/httpd/api_utils.go b/internal/httpd/api_utils.go
+index 02e1ee1..07b7bd6 100644
 --- a/internal/httpd/api_utils.go
 +++ b/internal/httpd/api_utils.go
 @@ -506,9 +506,15 @@ func addFileToZipEntry(wr *zip.Writer, conn *Connection, entryPath, entryName st
@@ -128,6 +133,7 @@ diff --git a/internal/httpd/api_utils.go b/internal/httpd/api_utils.go
  		return util.NewI18nError(
  			fmt.Errorf("login method password is not allowed for user %q", user.Username),
 diff --git a/internal/httpd/auth_utils.go b/internal/httpd/auth_utils.go
+index ab2d283..326569a 100644
 --- a/internal/httpd/auth_utils.go
 +++ b/internal/httpd/auth_utils.go
 @@ -19,6 +19,7 @@ import (
@@ -177,6 +183,7 @@ diff --git a/internal/httpd/auth_utils.go b/internal/httpd/auth_utils.go
  		return nil
  	}
 diff --git a/internal/httpd/handler.go b/internal/httpd/handler.go
+index f1512c8..fef3c1f 100644
 --- a/internal/httpd/handler.go
 +++ b/internal/httpd/handler.go
 @@ -194,7 +194,7 @@ func (c *Connection) getFileWriter(name string) (io.WriteCloser, error) {
@@ -201,6 +208,7 @@ diff --git a/internal/httpd/handler.go b/internal/httpd/handler.go
  			if err == nil {
  				dataprovider.UpdateUserFolderQuota(&vfolder, &c.User, 0, -fileSize, false)
 diff --git a/internal/httpd/server.go b/internal/httpd/server.go
+index 62d6f80..c582623 100644
 --- a/internal/httpd/server.go
 +++ b/internal/httpd/server.go
 @@ -1615,6 +1615,8 @@ func (s *httpdServer) setupWebClientRoutes() {
@@ -255,12 +263,8 @@ diff --git a/internal/httpd/server.go b/internal/httpd/server.go
  
  			router.Get(webLogoutPath, s.handleWebAdminLogout)
  			router.With(s.refreshCookie, s.checkAuthRequirements, s.requireBuiltinLogin).Get(
-@@ -1922,3 +1933,4 @@ func (s *httpdServer) setupWebAdminRoutes() {
- 		})
- 	}
- }
-+
 diff --git a/internal/httpd/webadmin.go b/internal/httpd/webadmin.go
+index cf063d6..b29aca2 100644
 --- a/internal/httpd/webadmin.go
 +++ b/internal/httpd/webadmin.go
 @@ -111,6 +111,9 @@ var (
@@ -283,7 +287,17 @@ diff --git a/internal/httpd/webadmin.go b/internal/httpd/webadmin.go
  		IsEventManagerPage:  isEventManagerResource(currentURL),
  		IsIPManagerPage:     isIPListsResource(currentURL),
  		IsServerManagerPage: isServerManagerResource(currentURL),
-@@ -2983,7 +2989,11 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
+@@ -2975,15 +2981,18 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
+ 		s.renderProfilePage(w, r, err)
+ 		return
+ 	}
+-	admin.Filters.AllowAPIKeyAuth = r.Form.Get("allow_api_key_auth") != ""
+-	admin.Email = r.Form.Get("email")
+-	admin.Description = r.Form.Get("description")
++	if (r.Form.Get("profile_section") == "" || r.Form.Get("profile_section") == "advanced") { admin.Filters.AllowAPIKeyAuth = r.Form.Get("allow_api_key_auth") != "" }
++ if r.Form.Get("profile_section") != "advanced" { if r.Form.Get("profile_section") != "description" { admin.Email = r.Form.Get("email") }; if r.Form.Get("profile_section") != "email" { admin.Description = r.Form.Get("description") } }
+ 	err = dataprovider.UpdateAdmin(&admin, dataprovider.ActionExecutorSelf, ipAddr, admin.Role)
+ 	if err != nil {
  		s.renderProfilePage(w, r, err)
  		return
  	}
@@ -297,6 +311,7 @@ diff --git a/internal/httpd/webadmin.go b/internal/httpd/webadmin.go
  
  func (s *httpdServer) handleWebMaintenance(w http.ResponseWriter, r *http.Request) {
 diff --git a/internal/httpd/webclient.go b/internal/httpd/webclient.go
+index c2c7839..9cc1169 100644
 --- a/internal/httpd/webclient.go
 +++ b/internal/httpd/webclient.go
 @@ -83,6 +83,9 @@ func isZeroTime(t time.Time) bool {
@@ -503,9 +518,12 @@ diff --git a/internal/httpd/webclient.go b/internal/httpd/webclient.go
  	if share.Password == "" {
  		if slices.Contains(claims.Permissions, sdk.WebClientShareNoPasswordDisabled) {
  			s.renderAddUpdateSharePage(w, r, share,
-@@ -1521,9 +1573,9 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
+@@ -1519,11 +1571,11 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
+ 		), true)
+ 		return
  	}
- 	err = dataprovider.AddShare(share, claims.Username, ipAddr, claims.Role)
+-	err = dataprovider.AddShare(share, claims.Username, ipAddr, claims.Role)
++	err = airAddUniqueShare(share, claims.Username, ipAddr, claims.Role)
  	if err == nil {
 -		http.Redirect(w, r, webClientSharesPath, http.StatusSeeOther)
 +		http.Redirect(w, r, webClientSharesPath+"?created="+url.QueryEscape(share.ShareID), http.StatusSeeOther)
@@ -558,7 +576,50 @@ diff --git a/internal/httpd/webclient.go b/internal/httpd/webclient.go
  		return data, len(shares), err
  	}
  
-@@ -1702,7 +1769,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+@@ -1665,7 +1732,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+ 		))
+ 		return
+ 	}
+-	if userMerged.CanManagePublicKeys() {
++	if userMerged.CanManagePublicKeys() && (r.Form.Get("profile_section") == "" || r.Form.Get("profile_section") == "advanced") {
+ 		for k := range r.Form {
+ 			if hasPrefixAndSuffix(k, "public_keys[", "][public_key]") {
+ 				r.Form.Add("public_keys", r.Form.Get(k))
+@@ -1673,7 +1740,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+ 		}
+ 		user.PublicKeys = r.Form["public_keys"]
+ 	}
+-	if userMerged.CanManageTLSCerts() {
++	if userMerged.CanManageTLSCerts() && (r.Form.Get("profile_section") == "" || r.Form.Get("profile_section") == "advanced") {
+ 		for k := range r.Form {
+ 			if hasPrefixAndSuffix(k, "tls_certs[", "][tls_cert]") {
+ 				r.Form.Add("tls_certs", r.Form.Get(k))
+@@ -1681,12 +1748,12 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+ 		}
+ 		user.Filters.TLSCerts = r.Form["tls_certs"]
+ 	}
+-	if userMerged.CanChangeAPIKeyAuth() {
++	if userMerged.CanChangeAPIKeyAuth() && (r.Form.Get("profile_section") == "" || r.Form.Get("profile_section") == "advanced") {
+ 		user.Filters.AllowAPIKeyAuth = r.Form.Get("allow_api_key_auth") != ""
+ 	}
+-	if userMerged.CanChangeInfo() {
+-		user.Email = strings.TrimSpace(r.Form.Get("email"))
+-		user.Description = r.Form.Get("description")
++	if userMerged.CanChangeInfo() && r.Form.Get("profile_section") != "advanced" {
++		if r.Form.Get("profile_section") != "description" { user.Email = strings.TrimSpace(r.Form.Get("email")) }
++		if r.Form.Get("profile_section") != "email" { user.Description = r.Form.Get("description") }
+ 		for k := range r.Form {
+ 			if hasPrefixAndSuffix(k, "additional_emails[", "][additional_email]") {
+ 				email := strings.TrimSpace(r.Form.Get(k))
+@@ -1695,14 +1762,14 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+ 				}
+ 			}
+ 		}
+-		user.Filters.AdditionalEmails = r.Form["additional_emails"]
++		if (r.Form.Get("profile_section") == "" || r.Form.Get("profile_section") == "advanced") { user.Filters.AdditionalEmails = r.Form["additional_emails"] }
+ 	}
+ 	err = dataprovider.UpdateUser(&user, dataprovider.ActionExecutorSelf, ipAddr, user.Role)
+ 	if err != nil {
  		s.renderClientProfilePage(w, r, util.NewI18nError(err, util.I18nError500Message))
  		return
  	}
@@ -576,3 +637,16 @@ diff --git a/internal/httpd/webclient.go b/internal/httpd/webclient.go
  		status = getMappedStatusCode(err)
  	}
  
+diff --git a/internal/httpd/api_shares.go b/internal/httpd/api_shares.go
+index eac05a8..da6f4d0 100644
+--- a/internal/httpd/api_shares.go
++++ b/internal/httpd/api_shares.go
+@@ -114,7 +114,7 @@ func addShare(w http.ResponseWriter, r *http.Request) {
+ 			return
+ 		}
+ 	}
+-	err = dataprovider.AddShare(&share, claims.Username, util.GetIPFromRemoteAddress(r.RemoteAddr), claims.Role)
++	err = airAddUniqueShare(&share, claims.Username, util.GetIPFromRemoteAddress(r.RemoteAddr), claims.Role)
+ 	if err != nil {
+ 		sendAPIResponse(w, r, err, "", getRespStatus(err))
+ 		return

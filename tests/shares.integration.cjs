@@ -16,7 +16,8 @@ async function main(){
    return fetch(base+'/web/client/share',{method:'POST',redirect:'manual',headers:{Cookie:cookie,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({_form_token:csrf(await form.text()),custom_id:id,name:'Shared folder',paths:sharedPath,scope:'1',max_tokens:'0',expiration_date:'',password:sharePassword})});
  }
  let r=await create('1');assert.equal(r.status,303,'custom one-character suffix accepted');assert.ok(r.headers.get('location').includes('created=1')||r.headers.get('location').endsWith('/shares'));
- r=await create('1');assert.notEqual(r.status,303);assert.ok((await r.text()).includes('这个分享后缀已被占用，请换一个'),'duplicate suffix shows useful error');
+ r=await create('1');assert.notEqual(r.status,303);assert.ok((await r.text()).includes('这个分享后缀已被占用'),'duplicate suffix shows useful error');
+ r=await create('duplicate-folder');assert.notEqual(r.status,303);assert.match(await r.text(),/id="errorTxt">所选文件或文件夹已创建分享<\/span>/);
  r=await create('bad/slash');assert.notEqual(r.status,303);assert.ok((await r.text()).includes('分享后缀只能使用'));
  r=await create('web');assert.notEqual(r.status,303);
  r=await fetch(base+'/1');assert.equal(r.status,200);let page=await r.text();assert.ok(page.includes('file_manager_list'),'folder opens browsable share page');
@@ -31,7 +32,7 @@ async function main(){
  r=await fetch(base+'/web/client/pubshares/1/partial?path=/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({files:JSON.stringify(['first.txt'])})});assert.equal(r.status,200);assert.equal(await r.text(),'updated version','single selected file downloads the original');
  r=await fetch(base+'/web/client/pubshares/1/partial?path=/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({files:JSON.stringify(['first.txt','sub'])})});assert.equal(r.status,200);const archive=Buffer.from(await r.arrayBuffer());assert.equal(archive.subarray(0,2).toString(),'PK');assert.ok(archive.includes(Buffer.from('first.txt')));assert.ok(archive.includes(Buffer.from('second.txt')));assert.ok(!archive.includes(Buffer.from('private.txt')));
  r=await fetch(base+'/web/client/pubshares/1/browse?path='+encodeURIComponent('/../private.txt'));assert.notEqual(r.status,200,'cannot escape share root');
- r=await create('protected','/share-live','Share-Password-7r!q');assert.equal(r.status,303);
+ await upload('/protected-folder/file.txt','protected');r=await create('protected','/protected-folder','Share-Password-7r!q');assert.equal(r.status,303);
  r=await fetch(base+'/protected');assert.ok(r.url.includes('/login'),'short share respects password protection');
  r=await fetch(base+'/web/client/pubshares/1/download?compress=false');assert.equal(r.status,200,'old share-page endpoint remains compatible');
  console.log('PASS: custom short IDs, duplicate/invalid IDs, protected folder browsing, selected download, live add/edit/delete, traversal isolation and old links');

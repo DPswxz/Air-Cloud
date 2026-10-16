@@ -216,7 +216,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-navigation.js?v=20261015-5"></script>
 <script src="{{.StaticURL}}/air-file-actions.js?v=20261015-3"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>window.AirRecycleConfig={csrf:'{{.CSRFToken}}'};</script>
-<script src="{{.StaticURL}}/air-recycle.js?v=20261016-recycle-stable3"></script>
+<script src="{{.StaticURL}}/air-recycle.js?v=20261016-refresh-theme1"></script>
 <script src="{{.StaticURL}}/air-settings.js?v=20261015-3"></script>
 <script src="{{.StaticURL}}/air-capacity.js?v=20261015-2"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261015-3"></script>
@@ -1070,11 +1070,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                         let row = dt.row(rowIdx);
                         filesArray.push(getNameFromMeta(row.data()['meta']));
                     });
-                    let files = encodeURIComponent(JSON.stringify(filesArray));
-                    let shareURL = '{{.ShareURL}}';
-                    let currentDir = '{{.CurrentDir}}';
-                    let ts = new Date().getTime().toString();
-                    window.open(`${shareURL}?path=${currentDir}&files=${files}&_=${ts}`,'_blank');
+                    airOpenShare(filesArray);
                 });
             }
 
@@ -1717,14 +1713,30 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         });
     }
 
+    let airShareCheckPending=false;
+    async function airOpenShare(filesArray) {
+        if(airShareCheckPending||!filesArray.length)return;
+        airShareCheckPending=true;
+        try {
+            const response=await fetch('{{.SharesURL}}/json',{cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}});
+            if(!response.ok)throw Error('share check failed');
+            const shares=await response.json();
+            const base=decodeURIComponent('{{.CurrentDir}}'.replace(/\+/g,' '));
+            const clean=value=>{const parts=[];for(const p of value.split('/')){if(p==='..')parts.pop();else if(p&&p!=='.')parts.push(p)}return '/'+parts.join('/')};
+            const paths=new Set(filesArray.map(name=>clean(base+'/'+name)));
+            if(shares.some(share=>(share.paths||[]).some(p=>paths.has(clean(p))))){
+                ModalAlert.fire({text:'所选文件或文件夹已创建分享',icon:'warning',confirmButtonText:'知道了',customClass:{confirmButton:'btn btn-light-primary'}});return;
+            }
+            const target='{{.ShareURL}}?path={{.CurrentDir}}&files='+encodeURIComponent(JSON.stringify(filesArray))+'&_='+Date.now();
+            if(!window.open(target,'_blank'))window.location.assign(target);
+        } catch(error) {
+            ModalAlert.fire({text:'暂时无法检查分享，请稍后重试',icon:'warning',confirmButtonText:'知道了',customClass:{confirmButton:'btn btn-light-primary'}});
+        } finally {airShareCheckPending=false}
+    }
     function shareItem(meta) {
         let filesArray = [];
         filesArray.push(getNameFromMeta(meta));
-        let files = encodeURIComponent(JSON.stringify(filesArray));
-        let shareURL = '{{.ShareURL}}';
-        let currentDir = '{{.CurrentDir}}';
-        let ts = new Date().getTime().toString();
-        window.open(`${shareURL}?path=${currentDir}&files=${files}&_=${ts}`,'_blank');
+        airOpenShare(filesArray);
     }
 
     function renameItem(meta) {

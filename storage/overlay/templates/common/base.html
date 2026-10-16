@@ -21,7 +21,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         <span class="path3"></span>
     </i>
     <div class="text-gray-800 fw-bold fs-5 d-flex flex-column pe-0 pe-sm-10">
-        <span {{if .}}data-i18n="{{.Message}}" {{if .HasArgs}}data-i18n-options="{{.Args}}"{{end}}{{end}} id="errorTxt"></span>
+        <span {{if .}}data-i18n="{{.Message}}" {{if .HasArgs}}data-i18n-options="{{.Args}}"{{end}}{{end}} id="errorTxt">{{if .}}{{.Message}}{{end}}</span>
     </div>
     <button id="id_dismiss_error_msg" type="button" class="position-absolute position-sm-relative m-2 m-sm-0 top-0 end-0 btn btn-icon btn-sm btn-active-light-primary ms-sm-auto">
         <i class="ki-solid ki-cross fs-2x text-gray-700"></i>
@@ -202,6 +202,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         document.documentElement.setAttribute('lang', i18next.resolvedLanguage);
         $('title').text('{{.Branding.Name}} - '+$.t('{{.Title}}'));
         $('body').localize();
+        const errorText=document.getElementById('errorTxt');
+        if(errorText&&!errorText.textContent.trim())errorText.textContent=errorText.getAttribute('data-i18n')||'';
         let select2elements = [].slice.call(document.querySelectorAll('[data-control="i18n-select2"]'));
         select2elements.map(function (element){
             initializeSelect2El(element);
@@ -861,7 +863,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         <link href="{{$.StaticURL}}{{.}}" rel="stylesheet" type="text/css">
         {{- end}}
         {{- template "commonjs" .CSPNonce }}
-        <link href="{{.StaticURL}}/nas-ui.css?v=20261016-modal-alert2" rel="stylesheet" type="text/css">
+        <link href="{{.StaticURL}}/nas-ui.css?v=20261016-recycle-refresh-theme1" rel="stylesheet" type="text/css">
     </head>
 
     <body data-air-owner="{{.LoggedUser.Username}}" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true"  class="app-default">
@@ -1144,7 +1146,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             }
         </script>
         {{- block "extra_js" .}}{{- end}}
-        <script src="{{.StaticURL}}/nas-ui.js?v=20261016-page-title1"></script>
+        <script src="{{.StaticURL}}/nas-ui.js?v=20261016-admin-disk1"></script>
     </body>
 </html>
 {{- end}}

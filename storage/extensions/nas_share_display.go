@@ -3,9 +3,9 @@ package httpd
 import (
 	"github.com/drakkan/sftpgo/v2/internal/dataprovider"
 	"github.com/drakkan/sftpgo/v2/internal/util"
-	"path"
 	"strings"
-	"time"
+"path"
+"time"
 )
 
 type nasSharedItem struct {
@@ -35,16 +35,13 @@ func nasDisplaySize(size int64) string {
 
 // Public share identity exposes only the sharer name and selected preset avatar.
 type nasShareIdentity struct {
-	ShareOwner       string
-	ShareOwnerAvatar string
-	ShareTitle       string
-	ShareTime        string
+ ShareOwner string
+ ShareOwnerAvatar string
+ ShareTitle string
+ ShareTime string
 }
-
 func nasPublicShareIdentity(share *dataprovider.Share) nasShareIdentity {
-	names := make([]string, 0, len(share.Paths))
-	for _, p := range share.Paths {
-		names = append(names, path.Base(p))
-	}
-	return nasShareIdentity{ShareOwner: share.Username, ShareOwnerAvatar: nasAvatarURL("user", share.Username), ShareTitle: strings.Join(names, "、"), ShareTime: time.UnixMilli(share.CreatedAt).In(time.FixedZone("Asia/Shanghai", 8*60*60)).Format("2006/01/02 15:04")}
+ names := make([]string,0,len(share.Paths))
+ for _, p := range share.Paths { names=append(names,path.Base(p)) }
+ return nasShareIdentity{ShareOwner:share.Username,ShareOwnerAvatar:nasAvatarURL("user",share.Username),ShareTitle:strings.Join(names,"、"),ShareTime:time.UnixMilli(share.CreatedAt).In(time.FixedZone("Asia/Shanghai",8*60*60)).Format("2006/01/02 15:04")}
 }

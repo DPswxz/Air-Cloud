@@ -14,7 +14,24 @@ func handleNASCapacity(w http.ResponseWriter, r *http.Request) {
 	}
 	defer common.Connections.Remove(c.GetID())
 	if c.User.IsNASAdminFileView() {
-		sendAPIResponse(w, r, nil, "请使用个人账号查看容量", 403)
+		fs, root, err := c.GetFsAndResolvedPath("/")
+		if err != nil {
+			sendAPIResponse(w, r, nil, "磁盘容量暂时不可用", 503)
+			return
+		}
+		stat, err := fs.GetAvailableDiskSize(root)
+		if err != nil {
+			sendAPIResponse(w, r, nil, "磁盘容量暂时不可用", 503)
+			return
+		}
+		capacity := int64(stat.Blocks) * int64(stat.Bsize)
+		remaining := int64(stat.Bavail) * int64(stat.Bsize)
+		if remaining > capacity {
+			remaining = capacity
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		json.NewEncoder(w).Encode(map[string]any{"scope": "disk", "capacity": capacity, "used": capacity - remaining, "remaining": remaining, "recycle": 0, "quota_limited": false})
 		return
 	}
 	files, used, _, _, err := dataprovider.GetUsedQuota(c.User.Username)

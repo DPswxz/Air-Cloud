@@ -337,6 +337,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
         return {
             init: function () {
+                if ($.fn.dataTable.isDataTable('#dataTable')) return;
                 initDatatable();
                 handleSearchDatatable();
             }
@@ -344,6 +345,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
     }();
 
     $(document).on("i18nshow", function(){
+        const element=document.getElementById("dataTable");if(element.dataset.airSharesInitialized)return;element.dataset.airSharesInitialized="1";
         sharesDatatable.init();
 
         var clipboard = new ClipboardJS('.btn-clipboard-copy',{

@@ -43,10 +43,10 @@ func (s *httpdServer) handleNASDownloadManifest(w http.ResponseWriter, r *http.R
 		return
 	}
 	defer common.Connections.Remove(conn.GetID())
-	base := conn.User.GetCleanedPath(r.URL.Query().Get("path"))
-	renderNASDownloadManifest(w, r, conn, base, selected, nil)
+ base := conn.User.GetCleanedPath(r.URL.Query().Get("path"))
+ renderNASDownloadManifest(w,r,conn,base,selected,nil)
 }
-func renderNASDownloadManifest(w http.ResponseWriter, r *http.Request, conn *Connection, base string, selected []string, share *dataprovider.Share) {
+func renderNASDownloadManifest(w http.ResponseWriter,r *http.Request,conn *Connection,base string,selected []string,share *dataprovider.Share){
 	result := nasDownloadManifest{Files: []nasDownloadEntry{}, Directories: []string{}}
 	visited := map[string]bool{}
 	var walk func(string, string, int) error
@@ -94,20 +94,15 @@ func renderNASDownloadManifest(w http.ResponseWriter, r *http.Request, conn *Con
 		if !conn.User.HasPerm(dataprovider.PermDownload, path.Dir(entry)) {
 			return errors.New("download permission denied")
 		}
-		downloadURL := webClientFilesPath + "?air_raw=1&path=" + url.QueryEscape(entry)
-		if share != nil {
-			downloadURL = path.Join(webClientPubSharesPath, share.ShareID, "browse") + "?air_raw=1&path=" + url.QueryEscape(share.GetRelativePath(entry))
-		}
-		result.Files = append(result.Files, nasDownloadEntry{Name: info.Name(), Relative: relative, Size: info.Size(), URL: downloadURL})
+		downloadURL:=webClientFilesPath+"?air_raw=1&path="+url.QueryEscape(entry)
+ if share!=nil{downloadURL=path.Join(webClientPubSharesPath,share.ShareID,"browse")+"?air_raw=1&path="+url.QueryEscape(share.GetRelativePath(entry))}
+ result.Files = append(result.Files, nasDownloadEntry{Name: info.Name(), Relative: relative, Size: info.Size(), URL:downloadURL})
 		result.Total += info.Size()
 		return nil
 	}
 	for _, name := range selected {
-		if name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\\") {
-			http.Error(w, "Invalid selection", 400)
-			return
-		}
-		entry := conn.User.GetCleanedPath(path.Join(base, name))
+		if name==""||name=="."||name==".."||strings.ContainsAny(name,"/\\"){http.Error(w,"Invalid selection",400);return}
+  entry := conn.User.GetCleanedPath(path.Join(base, name))
 		if err := walk(entry, path.Base(entry), 0); err != nil {
 			sendAPIResponse(w, r, err, "Unable to prepare download", getRespStatus(err))
 			return
@@ -117,35 +112,13 @@ func renderNASDownloadManifest(w http.ResponseWriter, r *http.Request, conn *Con
 	render.JSON(w, r, result)
 }
 
-func (s *httpdServer) handleNASShareDownloadManifest(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 2*1024*1024)
-	if r.ParseForm() != nil {
-		http.Error(w, "Invalid form", 400)
-		return
-	}
-	share, conn, err := s.checkPublicShare(w, r, []dataprovider.ShareScope{dataprovider.ShareScopeRead, dataprovider.ShareScopeReadWrite})
-	if err != nil {
-		return
-	}
-	defer conn.CloseFS()
-	if err = validateBrowsableShare(share, conn); err != nil {
-		http.Error(w, "Invalid share", 403)
-		return
-	}
-	base, err := getBrowsableSharedPath(share.Paths[0], r)
-	if err != nil {
-		http.Error(w, "Invalid path", 403)
-		return
-	}
-	var selected []string
-	if json.Unmarshal([]byte(r.Form.Get("files")), &selected) != nil || len(selected) == 0 || len(selected) > 25000 {
-		http.Error(w, "Invalid selection", 400)
-		return
-	}
-	if err = common.Connections.Add(conn); err != nil {
-		http.Error(w, "Too many requests", 429)
-		return
-	}
-	defer common.Connections.Remove(conn.GetID())
-	renderNASDownloadManifest(w, r, conn, base, selected, &share)
+func (s *httpdServer) handleNASShareDownloadManifest(w http.ResponseWriter,r *http.Request){
+ r.Body=http.MaxBytesReader(w,r.Body,2*1024*1024)
+ if r.ParseForm()!=nil{http.Error(w,"Invalid form",400);return}
+ share,conn,err:=s.checkPublicShare(w,r,[]dataprovider.ShareScope{dataprovider.ShareScopeRead,dataprovider.ShareScopeReadWrite});if err!=nil{return};defer conn.CloseFS()
+ if err=validateBrowsableShare(share,conn);err!=nil{http.Error(w,"Invalid share",403);return}
+ base,err:=getBrowsableSharedPath(share.Paths[0],r);if err!=nil{http.Error(w,"Invalid path",403);return}
+ var selected []string;if json.Unmarshal([]byte(r.Form.Get("files")),&selected)!=nil||len(selected)==0||len(selected)>25000{http.Error(w,"Invalid selection",400);return}
+ if err=common.Connections.Add(conn);err!=nil{http.Error(w,"Too many requests",429);return};defer common.Connections.Remove(conn.GetID())
+ renderNASDownloadManifest(w,r,conn,base,selected,&share)
 }

@@ -6,6 +6,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/drakkan/sftpgo/v2/internal/dataprovider"
 	"github.com/drakkan/sftpgo/v2/internal/util"
@@ -25,11 +26,11 @@ func airAssignShareID(share *dataprovider.Share, r *http.Request) error {
 	}
 	switch strings.ToLower(id) {
 	case "web", "api", "static", "healthz", "nas-login", "lan-check", "forgot-password", "speedtest":
-		return errors.New("这个分享后缀已被占用，请换一个")
+		return errors.New("这个分享后缀已被占用")
 	}
 	_, err := dataprovider.ShareExists(id, "")
 	if err == nil {
-		return errors.New("这个分享后缀已被占用，请换一个")
+		return errors.New("这个分享后缀已被占用")
 	}
 	if getRespStatus(err) != http.StatusNotFound {
 		return errors.New("暂时无法检查分享后缀，请稍后重试")
@@ -39,7 +40,7 @@ func airAssignShareID(share *dataprovider.Share, r *http.Request) error {
 
 func airShareCreationError(err error, r *http.Request) *util.I18nError {
 	if strings.TrimSpace(r.Form.Get("custom_id")) != "" && getRespStatus(err) == http.StatusConflict {
-		return util.NewI18nError(err, "这个分享后缀已被占用，请换一个")
+		return util.NewI18nError(err, "这个分享后缀已被占用")
 	}
 	return util.NewI18nError(err, util.I18nErrorShareGeneric)
 }
@@ -62,4 +63,34 @@ func (s *httpdServer) handleAirSharePage(w http.ResponseWriter, r *http.Request)
 	}
 	// Existing native download endpoints remain compatible with old links.
 	s.renderShareDownloadPage(w, r, &share, path.Join(webClientPubSharesPath, share.ShareID)+"?compress=false")
+}
+
+// Serialize the uniqueness check and insert so simultaneous requests cannot duplicate a path.
+var airShareCreationMu sync.Mutex
+
+func airAddUniqueShare(share *dataprovider.Share, executor, ipAddress, role string) error {
+	airShareCreationMu.Lock()
+	defer airShareCreationMu.Unlock()
+	requested := make(map[string]bool, len(share.Paths))
+	for _, entry := range share.Paths {
+		requested[path.Clean("/"+strings.TrimPrefix(entry, "/"))] = true
+	}
+	for offset := 0; ; offset += 100 {
+		existing, err := dataprovider.GetShares(100, offset, dataprovider.OrderASC, share.Username)
+		if err != nil {
+			return err
+		}
+		for _, item := range existing {
+			for _, entry := range item.Paths {
+				if requested[path.Clean("/"+strings.TrimPrefix(entry, "/"))] {
+					const message = "所选文件或文件夹已创建分享"
+					return util.NewI18nError(util.NewValidationError(message), message)
+				}
+			}
+		}
+		if len(existing) < 100 {
+			break
+		}
+	}
+	return dataprovider.AddShare(share, executor, ipAddress, role)
 }
