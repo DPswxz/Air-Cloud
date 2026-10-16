@@ -861,7 +861,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         <link href="{{$.StaticURL}}{{.}}" rel="stylesheet" type="text/css">
         {{- end}}
         {{- template "commonjs" .CSPNonce }}
-        <link href="{{.StaticURL}}/nas-ui.css?v=20261016-tree1" rel="stylesheet" type="text/css">
+        <link href="{{.StaticURL}}/nas-ui.css?v=20261016-modal-alert2" rel="stylesheet" type="text/css">
     </head>
 
     <body data-air-owner="{{.LoggedUser.Username}}" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true"  class="app-default">
@@ -945,7 +945,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         <div id="kt_app_footer" class="app-footer">
                             <div class="app-container  container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3 align-items-center justify-content-center">
                                 <div class="text-gray-900 order-2 order-md-1">
-                                    <span class="text-gray-700 fw-semibold me-1" title="{{.Version}}">Air Cloud · Powered by SFTPGo</span><a href="https://github.com/DPswxz/Air-Cloud" class="ms-3">开源代码（AGPLv3）</a>
+                                    <span class="text-gray-700 fw-semibold me-1" title="{{.Version}}">Air Cloud · Powered by SFTPGo</span><a href="{{.StaticURL}}/nas-source.zip" class="ms-3">开源代码（AGPLv3）</a>
                                 </div>
                             </div>
                         </div>
@@ -970,10 +970,10 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-body">
-                        <div class="d-flex flex-center flex-column">
+                        <div class="air-alert-message">
                             <span id="modal_alert_icon">
                             </span>
-                            <div class="mt-10 text-center">
+                            <div class="air-alert-copy">
                                 <span id="modal_alert_text" class="fs-6 text-gray-900 fw-semibold"></span>
                             </div>
                         </div>
@@ -1055,13 +1055,13 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         okBtn.on("click", okFn);
                         okBtn.removeClass();
                         okBtn.addClass(params.customClass.confirmButton);
-                        okBtn.addClass("m-2");
+                        if(okBtn.hasClass('btn-danger'))okBtn.removeClass('btn-danger').addClass('btn-light-danger');
                         okBtn.text(params.confirmButtonText);
                         if (params.cancelButtonText){
                             cancelBtn.text(params.cancelButtonText);
                             cancelBtn.removeClass();
                             cancelBtn.addClass(params.customClass.cancelButton);
-                            cancelBtn.addClass("m-2");
+                            cancelBtn.removeClass('btn-secondary btn-dark').addClass('btn-light');
                         } else {
                             cancelBtn.addClass("d-none");
                         }
@@ -1144,7 +1144,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             }
         </script>
         {{- block "extra_js" .}}{{- end}}
-        <script src="{{.StaticURL}}/nas-ui.js?v=20261015-share2"></script>
+        <script src="{{.StaticURL}}/nas-ui.js?v=20261016-page-title1"></script>
     </body>
 </html>
 {{- end}}

@@ -6,6 +6,8 @@
 
 ## 快速开始
 
+最新界面包含可展开目录的传输列表与统一高度动画、回收站多选和右键操作、随机默认头像及折叠头像选择器。确认弹窗与页面按钮共用主题；注销会清理文件页缓存外壳，管理后台以完整页面打开。
+
 ### Windows 10/11
 
 1. 安装并启动 [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)，启用 WSL 2 / Linux containers。需要系统支持虚拟化；初次安装可能需要重启。
