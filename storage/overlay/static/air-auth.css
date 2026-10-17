@@ -1,0 +1,32 @@
+:root{--auth-page:#f4f7fc;--auth-surface:#fff;--auth-text:#20314a;--auth-muted:#72839b;--auth-line:#e6ebf3;--auth-soft:#eaf2ff;--auth-accent:#3478f6;--auth-danger:#cb3158}
+[data-bs-theme=dark]{--auth-page:#101827;--auth-surface:#172131;--auth-text:#e4ebf7;--auth-muted:#a4b6cd;--auth-line:#2a374c;--auth-soft:#203454;--auth-accent:#79adff;--auth-danger:#ff7597}
+html{min-height:100%;background:var(--auth-page)}
+body.air-auth{margin:0;min-height:100vh;background:var(--auth-page);color:var(--auth-text);font:14px/1.6 Inter,"Microsoft YaHei",system-ui,sans-serif;display:flex;align-items:flex-start;justify-content:center}
+.air-auth-card{box-sizing:border-box;width:min(440px,calc(100% - 32px));margin:clamp(20px,4vh,40px) auto;padding:24px 28px;background:var(--auth-surface);border:1px solid var(--auth-line);border-radius:16px;box-shadow:0 8px 32px #10203905}
+.air-auth-brand{display:flex;align-items:center;gap:12px;font-size:23px;font-weight:700;color:var(--auth-text);text-decoration:none;margin-bottom:16px}
+.air-auth-brand img{display:block;flex:0 0 44px}
+.air-auth h1{font-size:22px;line-height:1.4;margin:0 0 6px;font-weight:700}
+.air-auth-description{color:var(--auth-muted);margin:0 0 14px}
+.air-auth-notice{padding:7px 12px;background:var(--auth-soft);color:var(--auth-accent);border-radius:9px;margin:0 0 18px;font-size:12px}
+.air-auth label{display:block;margin:10px 0 4px;font-weight:600;font-size:13px}
+.air-auth :is(input,button){box-sizing:border-box;font:inherit;border-radius:9px;min-height:40px}
+.air-auth input:not([type=hidden]){width:100%;padding:9px 12px;border:1px solid var(--auth-line);background:var(--auth-surface);color:var(--auth-text);outline:0}
+.air-auth input::placeholder{color:var(--auth-muted);font-size:12px}
+.air-auth input:focus{border-color:var(--auth-accent);box-shadow:0 0 0 3px #3478f61a}
+.air-auth button{border:1px solid transparent;padding:8px 14px;font-weight:600;cursor:pointer;transition:background .18s,opacity .18s}
+.air-auth button:disabled{opacity:.55;cursor:default}
+.air-auth-code{display:flex;gap:10px}.air-auth-code input{min-width:0;flex:1}.air-auth-code button{flex:0 0 auto;white-space:nowrap}
+.air-auth-secondary{background:var(--auth-soft);color:var(--auth-accent)}
+.air-auth-primary{display:block;width:100%;background:#3478f6;color:#fff;margin-top:18px}
+.air-auth-primary:hover:enabled{background:#2465da}
+.air-auth-message{box-sizing:border-box;overflow:hidden;border-radius:9px;padding:10px 12px;margin-top:16px;background:var(--auth-soft);color:var(--auth-text);font-size:13px;overflow-wrap:anywhere}
+.air-auth-message[data-state=error]{color:var(--auth-danger);background:color-mix(in srgb,var(--auth-danger) 9%,var(--auth-surface))}
+.air-auth-message[data-state=success]{color:var(--auth-accent)}
+.air-auth [hidden]{display:none!important}
+.air-auth-footer{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--auth-muted);font-size:13px;margin:18px 0 0}
+.air-auth a{color:var(--auth-accent);text-decoration:none}.air-auth a:hover{text-decoration:underline}.air-auth a.air-auth-brand{color:var(--auth-text);text-decoration:none}
+.air-auth :is(a,button):focus-visible{outline:3px solid #3478f64d;outline-offset:3px}
+.air-auth-login-links{display:flex;justify-content:space-between;margin-top:16px;font-size:13px}
+.air-auth-email-hint{color:var(--auth-danger);font-size:12px;line-height:1.6;margin:6px 0 0}
+@media(max-width:480px){.air-auth-card{padding:24px;margin-block:20px}.air-auth-code{gap:8px}.air-auth-code button{padding-inline:10px}}
+@media(prefers-reduced-motion:reduce){.air-auth *{transition:none!important}}

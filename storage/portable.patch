@@ -98,7 +98,7 @@ index ae54594..3686cce 100644
  		sendAPIResponse(w, r, err, fmt.Sprintf("Unable to delete file %q", name), getMappedStatusCode(err))
  		return
 diff --git a/internal/httpd/api_utils.go b/internal/httpd/api_utils.go
-index 02e1ee1..07b7bd6 100644
+index 02e1ee1..e6524c0 100644
 --- a/internal/httpd/api_utils.go
 +++ b/internal/httpd/api_utils.go
 @@ -506,9 +506,15 @@ func addFileToZipEntry(wr *zip.Writer, conn *Connection, entryPath, entryName st
@@ -132,6 +132,17 @@ index 02e1ee1..07b7bd6 100644
  		logger.Info(logSender, connectionID, "cannot login user %q, password login method is not allowed", user.Username)
  		return util.NewI18nError(
  			fmt.Errorf("login method password is not allowed for user %q", user.Username),
+@@ -880,6 +891,10 @@ func handleForgotPassword(r *http.Request, username string, isAdmin bool) error
+ 	body := new(bytes.Buffer)
+ 	data := make(map[string]string)
+ 	data["Code"] = c.Code
++	data["Language"] = "zh-CN"
++	if cookie, err := r.Cookie("AIR_LANGUAGE"); err == nil && cookie.Value == "en" {
++		data["Language"] = "en"
++	}
+ 	if err := smtp.RenderPasswordResetTemplate(body, data); err != nil {
+ 		logger.Warn(logSender, middleware.GetReqID(r.Context()), "unable to render password reset template: %v", err)
+ 		return util.NewGenericError("Unable to render password reset template")
 diff --git a/internal/httpd/auth_utils.go b/internal/httpd/auth_utils.go
 index ab2d283..326569a 100644
 --- a/internal/httpd/auth_utils.go
@@ -208,19 +219,43 @@ index f1512c8..fef3c1f 100644
  			if err == nil {
  				dataprovider.UpdateUserFolderQuota(&vfolder, &c.User, 0, -fileSize, false)
 diff --git a/internal/httpd/server.go b/internal/httpd/server.go
-index 62d6f80..c582623 100644
+index 62d6f80..3cc736d 100644
 --- a/internal/httpd/server.go
 +++ b/internal/httpd/server.go
-@@ -1615,6 +1615,8 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -270,7 +270,12 @@ func (s *httpdServer) handleWebClientLoginPost(w http.ResponseWriter, r *http.Re
+ 		return
+ 	}
+ 
+-	user, err := dataprovider.CheckUserAndPass(username, password, ipAddr, protocol)
++	loginUsername, err := nasLoginUsername(username)
++	var user dataprovider.User
++	user.Username = username
++	if err == nil {
++		user, err = dataprovider.CheckUserAndPass(loginUsername, password, ipAddr, protocol)
++	}
+ 	if err != nil {
+ 		updateLoginMetrics(&user, dataprovider.LoginMethodPassword, ipAddr, err, r)
+ 		s.renderClientLoginPage(w, r,
+@@ -1583,6 +1588,9 @@ func (s *httpdServer) setupWebClientRoutes() {
+ 			s.router.Get(webClientOIDCLoginPath, s.handleWebClientOIDCLogin)
+ 		}
+ 		if !s.binding.isWebClientLoginFormDisabled() {
++			s.router.Get(nasRegistrationPath, s.handleNASRegistration)
++			s.router.With(jwt.Verify(s.csrfTokenAuth, jwt.TokenFromCookie)).Post(nasRegistrationPath, s.handleNASRegistrationPost)
++			s.router.With(jwt.Verify(s.csrfTokenAuth, jwt.TokenFromCookie)).Post(nasRegistrationPath+"/code", s.handleNASRegistrationPost)
+ 			s.router.With(jwt.Verify(s.csrfTokenAuth, jwt.TokenFromCookie)).
+ 				Post(webClientLoginPath, s.handleWebClientLoginPost)
+ 			s.router.Get(webClientForgotPwdPath, s.handleWebClientForgotPwd)
+@@ -1615,6 +1623,8 @@ func (s *httpdServer) setupWebClientRoutes() {
  		s.router.Get(webClientPubSharesPath+"/{id}/browse", s.handleShareGetFiles)
  		s.router.Post(webClientPubSharesPath+"/{id}/browse/exist", s.handleClientShareCheckExist)
  		s.router.Get(webClientPubSharesPath+"/{id}/download", s.handleClientSharedFile)
 +		s.router.Get(webClientPubSharesPath+"/{id}/view", s.handleAirSharePage)
-+ s.router.Post(webClientPubSharesPath+"/{id}/manifest",s.handleNASShareDownloadManifest)
++		s.router.Post(webClientPubSharesPath+"/{id}/manifest", s.handleNASShareDownloadManifest)
  		s.router.Get(webClientPubSharesPath+"/{id}/upload", s.handleClientUploadToShare)
  		s.router.With(compressor.Handler).Get(webClientPubSharesPath+"/{id}/dirs", s.handleShareGetDirContents)
  		s.router.Post(webClientPubSharesPath+"/{id}", s.uploadFilesToShare)
-@@ -1628,9 +1630,13 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1628,9 +1638,13 @@ func (s *httpdServer) setupWebClientRoutes() {
  			}
  			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
  			router.Use(jwtAuthenticatorWebClient)
@@ -235,7 +270,7 @@ index 62d6f80..c582623 100644
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientViewPDFPath, s.handleClientViewPDF)
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientGetPDFPath, s.handleClientGetPDF)
  			router.With(s.checkAuthRequirements, s.refreshCookie, s.verifyCSRFHeader).Get(webClientFilePath, getUserFile)
-@@ -1645,6 +1651,9 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1645,6 +1659,9 @@ func (s *httpdServer) setupWebClientRoutes() {
  				Delete(webClientFilesPath, deleteUserFile)
  			router.With(s.checkAuthRequirements, compressor.Handler, s.refreshCookie).
  				Get(webClientDirsPath, s.handleClientGetDirContents)
@@ -245,7 +280,7 @@ index 62d6f80..c582623 100644
  			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
  				Post(webClientDirsPath, createUserDir)
  			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
-@@ -1654,7 +1663,7 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1654,7 +1671,7 @@ func (s *httpdServer) setupWebClientRoutes() {
  			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
  				Post(webClientFileActionsPath+"/copy", taskCopyFsEntry)
  			router.With(s.checkAuthRequirements, s.refreshCookie).
@@ -254,7 +289,7 @@ index 62d6f80..c582623 100644
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientPingPath, handlePingRequest)
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientProfilePath,
  				s.handleClientGetProfile)
-@@ -1747,6 +1756,8 @@ func (s *httpdServer) setupWebAdminRoutes() {
+@@ -1747,6 +1764,8 @@ func (s *httpdServer) setupWebAdminRoutes() {
  			}
  			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
  			router.Use(jwtAuthenticatorWebAdmin)

@@ -31,6 +31,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
 {{- define "theme-setup"}}
 <script type="text/javascript" {{- if .}} nonce="{{.}}"{{- end}}>
+    if(location.pathname.startsWith('/web/admin/'))document.documentElement.classList.add('air-admin-ui');
     try { document.documentElement.classList.toggle('nas-sidebar-collapsed',localStorage.getItem('nas.sidebar.collapsed')==='1'); } catch {}
     var defaultThemeMode = "system";
     var themeMode;
@@ -48,6 +49,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             themeMode = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
         }
         document.documentElement.setAttribute("data-bs-theme", themeMode);
+        document.documentElement.style.colorScheme = themeMode;
+        document.documentElement.style.backgroundColor = themeMode === "dark" ? "#101827" : "#f4f7fc";
     }
 </script>
 {{- end }}
@@ -181,8 +184,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         element.setAttribute("data-kt-initialized", "1");
     }
 
-    const lngs = {};
-    lngs["zh-CN"] = { nativeName: "简体中文" };
+    const lngs = {en:{nativeName:"English"}};
+    lngs["zh-CN"] = { nativeName: window.AirI18n.t("简体中文") };
     //{{- range .Languages}}
     //{{- if eq . "en"}}
     lngs.en = { nativeName: 'English' };
@@ -218,7 +221,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 debug: false,
                 supportedLngs: Object.keys(lngs),
                 fallbackLng: Object.keys(lngs)[0],
-                lng: 'zh-CN',
+                lng: window.AirI18n.language,
                 load: 'currentOnly',
                 backend: {
                     backends: [
@@ -252,6 +255,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                             });
                             languageSwitcher.on('change', function () {
                                 const chosenLng = $(this).find("option:selected").attr('value');
+                                window.AirI18n.setLanguage(chosenLng);return;
                                 i18next.changeLanguage(chosenLng, () => {
                                     renderI18n();
                                 });
@@ -372,7 +376,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             for (const input of form.querySelectorAll('input[type="password"]')) {
                 if (['password','new_password1','new_password2'].includes(input.name) && input.autocomplete !== 'current-password' && input.value && Array.from(input.value).length < 3) {
                     event.preventDefault(); event.stopImmediatePropagation();
-                    alert('密码至少需要 3 个字符'); input.focus(); return;
+                    alert(window.AirI18n.t("密码至少需要 3 个字符")); input.focus(); return;
                 }
             }
         }, true);
@@ -847,11 +851,14 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
+        <script src="{{.StaticURL}}/air-i18n.js?v=20261017-locale-gaps1"></script>
+        <link rel="stylesheet" href="{{.StaticURL}}/air-i18n.css?v=20261017-language-menu1">
         <title></title>
         <meta charset="utf-8" />
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="noindex">
+        {{- template "theme-setup" .CSPNonce }}
         <link rel="icon" type="image/png" href="{{.StaticURL}}{{.Branding.FaviconPath}}" />
         {{- template "fonts" . }}
         {{- block "extra_css" .}}{{- end}}
@@ -863,7 +870,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         <link href="{{$.StaticURL}}{{.}}" rel="stylesheet" type="text/css">
         {{- end}}
         {{- template "commonjs" .CSPNonce }}
-        <link href="{{.StaticURL}}/nas-ui.css?v=20261016-recycle-refresh-theme1" rel="stylesheet" type="text/css">
+        <link href="{{.StaticURL}}/air-admin.css?v=20261016-admin-theme2" rel="stylesheet" type="text/css">
+        <link href="{{.StaticURL}}/nas-ui.css?v=20261017-avatars" rel="stylesheet" type="text/css">
     </head>
 
     <body data-air-owner="{{.LoggedUser.Username}}" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true"  class="app-default">
@@ -947,7 +955,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         <div id="kt_app_footer" class="app-footer">
                             <div class="app-container  container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3 align-items-center justify-content-center">
                                 <div class="text-gray-900 order-2 order-md-1">
-                                    <span class="text-gray-700 fw-semibold me-1" title="{{.Version}}">Air Cloud · Powered by SFTPGo</span><a href="{{.StaticURL}}/nas-source.zip" class="ms-3">开源代码（AGPLv3）</a>
+                                    <span class="text-gray-700 fw-semibold me-1" title="{{.Version}}">Air Cloud · Powered by SFTPGo</span><a href="{{.StaticURL}}/nas-source.zip" class="ms-3"><span data-air-i18n>开源代码（AGPLv3）</span></a>
                                 </div>
                             </div>
                         </div>
@@ -1068,7 +1076,12 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                             cancelBtn.addClass("d-none");
                         }
 
-                        $("#modal_alert_text").text(params.text);
+                        $("#modal_alert_text").empty();
+                        if (params.content instanceof Node) {
+                            document.getElementById('modal_alert_text').append(params.content);
+                        } else {
+                            $("#modal_alert_text").text(params.text);
+                        }
                         itemsList.empty();
                         itemsList.addClass("d-none");
                         if (params.items && params.items.length > 0){
@@ -1146,7 +1159,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             }
         </script>
         {{- block "extra_js" .}}{{- end}}
-        <script src="{{.StaticURL}}/nas-ui.js?v=20261016-admin-disk1"></script>
+        <script src="{{.StaticURL}}/air-admin.js?v=20261016-en2"></script>
+        <script src="{{.StaticURL}}/nas-ui.js?v=20261016-en2"></script>
     </body>
 </html>
 {{- end}}

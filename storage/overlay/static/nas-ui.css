@@ -264,3 +264,20 @@ img[src*="/air-cloud.svg"]{content:url("/static/air-cloud-material.svg")}
 /* Separate the disclosure border from surrounding profile content. */
 .nas-personal-card .nas-personal-advanced{margin-top:28px!important;margin-bottom:16px!important}
 @media(max-width:575px){.nas-personal-card .nas-personal-advanced{margin-top:24px!important}}
+
+body .nas-personal-card button.btn.btn-light-primary[data-avatar-toggle]{background:color-mix(in srgb,var(--nas-accent) 12%,var(--nas-surface))!important;border-color:transparent!important;color:var(--nas-accent)!important;box-shadow:none!important}
+body .nas-personal-card button.btn.btn-light-primary[data-avatar-toggle]:is(:hover,:active,.active){background:color-mix(in srgb,var(--nas-accent) 18%,var(--nas-surface))!important;color:var(--nas-accent)!important}
+/* Embedded SVG palettes follow the selected app theme, including live changes. */
+img[src*="/nas-avatars/"]{color-scheme:light}
+[data-bs-theme="dark"] img[src*="/nas-avatars/"]{color-scheme:dark}
+/* Share one dark surface across native and custom popovers. */
+[data-bs-theme="dark"] :is(.menu-sub-dropdown,.dropdown-menu,.select2-dropdown,.popover,.modal-content){background:var(--nas-surface)!important;color:var(--nas-text);border:1px solid var(--nas-line)!important;--bs-dropdown-bg:var(--nas-surface);--bs-popover-bg:var(--nas-surface);--bs-popover-border-color:var(--nas-line)}
+[data-bs-theme="dark"] :is(.menu-sub-dropdown,.dropdown-menu){border-radius:12px!important;box-shadow:0 10px 35px #0003!important}
+[data-bs-theme="dark"] :is(.menu-sub-dropdown,.dropdown-menu) :is(.menu-link,.dropdown-item){color:var(--nas-muted)!important}
+[data-bs-theme="dark"] :is(.menu-sub-dropdown,.dropdown-menu) :is(.menu-link,.dropdown-item):is(:hover,:focus-visible,.active){background:color-mix(in srgb,var(--nas-accent) 12%,var(--nas-surface))!important;color:var(--nas-accent)!important}
+[data-bs-theme="dark"] .menu-sub-dropdown .menu-link:is(:hover,:focus-visible,.active) :is(.menu-title,.menu-icon i){color:var(--nas-accent)!important}
+[data-bs-theme="dark"] .card:not(.air-admin-ui .card)>.card-header{background:var(--nas-surface)!important}
+/* The shared secondary action style also applies to links and form buttons. */
+[data-bs-theme="dark"] .btn.btn-light-primary{background:color-mix(in srgb,var(--nas-accent) 12%,var(--nas-surface))!important;border-color:transparent!important;color:var(--nas-accent)!important;box-shadow:none!important}
+[data-bs-theme="dark"] .btn.btn-light-primary:is(:hover,:active,.active,:focus-visible){background:color-mix(in srgb,var(--nas-accent) 18%,var(--nas-surface))!important;color:var(--nas-accent)!important}
+[data-bs-theme="dark"] .btn.btn-light-primary :is(i,svg){color:inherit!important}

@@ -62,7 +62,7 @@ func nasAvatarChoice(kind, username string) string {
 }
 
 func nasAvatarURL(kind, username string) string {
-	return webStaticFilesPath + "/nas-avatars/avatar-" + nasAvatarChoice(kind, username) + ".svg?v=20261016-grid42"
+	return webStaticFilesPath + "/nas-avatars/avatar-" + nasAvatarChoice(kind, username) + ".svg?v=20261017-theme42"
 }
 
 func (s *httpdServer) handleNASAvatar(w http.ResponseWriter, r *http.Request) {

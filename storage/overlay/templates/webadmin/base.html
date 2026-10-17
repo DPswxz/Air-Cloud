@@ -18,13 +18,13 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{- template "theme-switcher"}}
 <div class="d-flex align-items-center ms-2 ms-lg-3">
     <div class="btn btn-icon btn-active-light-primary w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default:'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
-        <img class="nas-avatar-small" src="{{.AvatarURL}}" alt="头像">
+        <img class="nas-avatar-small" src="{{.AvatarURL}}" alt="头像" data-air-i18n-attrs>
     </div>
     <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-title-gray-700 menu-icon-gray-500 menu-active-bg menu-state-color fw-semibold py-4 w-250px" data-kt-menu="true">
         <div class="menu-item px-3 my-0">
             <div class="menu-content d-flex align-items-center px-3 py-2">
                 <div class="me-5">
-                    <img class="nas-avatar-small" src="{{.AvatarURL}}" alt="头像">
+                    <img class="nas-avatar-small" src="{{.AvatarURL}}" alt="头像" data-air-i18n-attrs>
                 </div>
                 <div class="d-flex flex-column">
                     <div class="fw-semibold d-flex align-items-center fs-5">
@@ -54,7 +54,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
 {{- define "sidebaritems"}}
 {{- if .LoggedUser.HasPermission "*"}}
-<div class="menu-item"><a class="menu-link" href="/web/admin/all-files"><span class="menu-icon"><i class="ki-duotone ki-folder fs-1"><span class="path1"></span><span class="path2"></span></i></span><span class="menu-title">全部文件</span></a></div>
+<div class="menu-item"><a class="menu-link" href="/web/admin/all-files"><span class="menu-icon"><i class="ki-duotone ki-folder fs-1"><span class="path1"></span><span class="path2"></span></i></span><span class="menu-title"><span data-air-i18n>全部文件</span></span></a></div>
 {{- end}}
 {{- if .LoggedUser.HasPermission "view_users"}}
 <div class="menu-item">

@@ -38,10 +38,10 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         </div>
         <div class="card-body">
             <div class="air-share-details">
-<div class="air-public-share-person"><img class="air-public-share-avatar" src="{{.ShareOwnerAvatar}}" alt="分享人头像"><span>分享人：<strong>{{.ShareOwner}}</strong></span></div>
-                <div class="air-share-label">分享内容</div>
+<div class="air-public-share-person"><img class="air-public-share-avatar" src="{{.ShareOwnerAvatar}}" alt="分享人头像" data-air-i18n-attrs><span><span data-air-i18n>分享人：</span><strong>{{.ShareOwner}}</strong></span></div>
+                <div class="air-share-label"><span data-air-i18n>分享内容</span></div>
                 <ul class="air-share-names">{{range .ShareItems}}<li class="air-share-name"><i class="ki-duotone {{if .Directory}}ki-folder{{else}}ki-file{{end}} fs-2x text-primary"><i class="path1"></i><i class="path2"></i></i><span>{{.Name}}</span></li>{{end}}</ul>
-                <div class="air-share-time">分享时间：<time data-air-share-created="{{.ShareCreatedAt}}">—</time></div>
+                <div class="air-share-time"><span data-air-i18n>分享时间：</span><time data-air-share-created="{{.ShareCreatedAt}}">—</time></div>
             </div>
             <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>document.querySelectorAll('[data-air-share-created]').forEach(function(el){var stamp=Number(el.dataset.airShareCreated);if(stamp>0){el.dateTime=new Date(stamp).toISOString();el.textContent=new Date(stamp).toLocaleString('zh-CN',{hour12:false});}});</script>
             <div>

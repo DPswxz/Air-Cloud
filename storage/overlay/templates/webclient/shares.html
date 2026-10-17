@@ -43,9 +43,9 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 <thead>
                     <tr class="text-start text-muted fw-bold fs-6 gs-0">
                         <th data-i18n="general.name">Name</th>
-                        <th class="air-share-actions-heading">操作</th>
-                        <th>上次使用时间</th>
-                        <th>下载次数</th>
+                        <th class="air-share-actions-heading"><span data-air-i18n>操作</span></th>
+                        <th><span data-air-i18n>上次使用时间</span></th>
+                        <th><span data-air-i18n>下载次数</span></th>
                     </tr>
                 </thead>
                 <tbody id="table_body" class="text-gray-800 fw-semibold"></tbody>
@@ -70,9 +70,9 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             <div class="modal-body fs-5">
                 <div id="air-share-link-name" class="air-share-name mb-4"><i class="ki-duotone ki-file fs-2x text-primary"><i class="path1"></i><i class="path2"></i></i><strong></strong></div>
                 <div id="readShare" class="mb-3">
-                    <p class="text-muted">将链接发给对方，即可打开分享页面；文件夹可浏览并选择下载。</p>
-                    <input id="nas_download_url" class="form-control mb-4" aria-label="分享链接" readonly>
-                    <div class="d-flex gap-3"><button id="readLinkCopy" type="button" class="btn btn-primary btn-clipboard-copy">复制分享链接</button><a id="readLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-light-primary">打开分享页面</a></div>
+                    <p class="text-muted"><span data-air-i18n>将链接发给对方，即可打开分享页面；文件夹可浏览并选择下载。</span></p>
+                    <input id="nas_download_url" class="form-control mb-4" aria-label="分享链接" readonly data-air-i18n-attrs>
+                    <div class="d-flex gap-3"><button id="readLinkCopy" type="button" class="btn btn-primary btn-clipboard-copy"><span data-air-i18n>复制分享链接</span></button><a id="readLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-light-primary"><span data-air-i18n>打开分享页面</span></a></div>
                 </div>
                 <div id="writeShare" class="mb-5">
                     <p data-i18n="share.upload_desc">You can upload one or more files to the shared directory</p>
@@ -164,7 +164,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
     }
 
     function showShareLink(shareID, shareScope, expiresAt, name, directory) {
-        $('#air-share-link-name strong').text(name||'分享内容');$('#air-share-link-name>.ki-duotone').toggleClass('ki-folder',!!directory).toggleClass('ki-file',!directory);
+        $('#air-share-link-name strong').text(name||window.AirI18n.t("分享内容"));$('#air-share-link-name>.ki-duotone').toggleClass('ki-folder',!!directory).toggleClass('ki-file',!directory);
         if (expiresAt > 0 && expiresAt < Date.now()) {
             $('#expiredShare').show();
             $('#writeShare').hide();
@@ -231,14 +231,14 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                     },
                     {
                         data: "id",searchable:false,orderable:false,className:'air-share-action-cell',
-                        render:function(data,type,row){if(type!=='display')return '';return `<div class="air-share-actions"><a href="#" class="btn btn-sm btn-light-primary" data-table-action="show_link">链接</a><a href="#" class="btn btn-sm btn-light-primary" data-table-action="edit_row">编辑</a><a href="#" class="btn btn-sm btn-light-danger" data-table-action="delete_row">删除</a></div>`;}
+                        render:function(data,type,row){if(type!=='display')return '';return `${window.AirI18n.t("<div class=\"air-share-actions\"><a href=\"#\" class=\"btn btn-sm btn-light-primary\" data-table-action=\"show_link\">链接</a><a href=\"#\" class=\"btn btn-sm btn-light-primary\" data-table-action=\"edit_row\">编辑</a><a href=\"#\" class=\"btn btn-sm btn-light-danger\" data-table-action=\"delete_row\">删除</a></div>")}`;}
                     },
                     {
                         data: "last_use_at", defaultContent: 0, searchable: false,
                         render: function(data,type,row){
                             const stamp=Number(data)||0;
                             if(type!=='display')return stamp;
-                            if(!stamp)return '未使用';
+                            if(!stamp)return window.AirI18n.t("未使用");
                             const date=new Date(stamp),pad=n=>String(n).padStart(2,'0');
                             return date.getFullYear()+'/'+pad(date.getMonth()+1)+'/'+pad(date.getDate())+' '+pad(date.getHours())+':'+pad(date.getMinutes());
                         }
@@ -354,8 +354,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
         clipboard.on('success', function (e) {
             if (e.trigger.id === 'readLinkCopy') {
-                e.trigger.textContent = '已复制';
-                setTimeout(function(){e.trigger.textContent = '复制分享链接';}, 2000);
+                e.trigger.textContent = window.AirI18n.t("已复制");
+                setTimeout(function(){e.trigger.textContent = window.AirI18n.t("复制分享链接");}, 2000);
             }
             e.trigger.querySelectorAll('span').forEach(spanEl => {
                 if (spanEl.getAttribute('data-i18n')){

@@ -7,6 +7,8 @@ services:
       dockerfile: storage/Dockerfile
     restart: unless-stopped
     environment:
+      NAS_REGISTRATION_ENABLED: "${NAS_REGISTRATION_ENABLED:-true}"
+      NAS_REGISTRATION_QUOTA_GB: "${NAS_REGISTRATION_QUOTA_GB:-50}"
       SFTPGO_HTTPD__BINDINGS__0__PORT: "8080"
       SFTPGO_HTTPD__BINDINGS__0__ADDRESS: "0.0.0.0"
       SFTPGO_DATA_PROVIDER__BACKUPS_PATH: /srv/sftpgo/backups

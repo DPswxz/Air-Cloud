@@ -1,0 +1,80 @@
+/* Shared, compact administration layout. Client pages never match this scope. */
+.air-admin-ui #kt_app_content_container{max-width:1400px;width:100%;margin-inline:auto}
+.air-admin-ui .app-content{padding:20px 0!important}
+.air-admin-ui .app-sidebar .menu-link{min-height:40px;padding:10px 12px!important;margin-block:2px}
+.air-admin-ui #kt_app_content .card{border-radius:12px!important;box-shadow:none!important}
+.air-admin-ui #kt_app_content .card-header{min-height:52px!important;padding:12px 20px!important;gap:10px}
+.air-admin-ui #kt_app_content .card-title{font-size:17px!important;line-height:1.5;margin-block:0!important;gap:8px}
+.air-admin-ui #kt_app_content .section-title-inner{font-size:14px!important}
+.air-admin-ui #kt_app_content .card-body{padding:18px 20px!important}
+.air-admin-ui #kt_app_content .card .card-header{background:var(--nas-page)!important}
+.air-admin-ui #kt_app_content form{max-width:1120px}
+.air-admin-ui #kt_app_content :is(.mt-10,.mt-12,.mt-15,.mt-20){margin-top:16px!important}
+.air-admin-ui #kt_app_content :is(.mb-10,.mb-12,.mb-15,.mb-20){margin-bottom:16px!important}
+.air-admin-ui #kt_app_content :is(.py-10,.py-12){padding-block:16px!important}
+.air-admin-ui #kt_app_content .form-group+.form-group{margin-top:14px!important}
+.air-admin-ui #kt_app_content .form-group.row{--bs-gutter-x:16px;--bs-gutter-y:8px}
+.air-admin-ui #kt_app_content .air-admin-field{display:grid;grid-template-columns:176px minmax(0,1fr);gap:6px 16px;margin-inline:0;align-items:start}
+.air-admin-ui #kt_app_content .air-admin-field>:is(label,[class*=col-]){width:100%;max-width:100%;padding-inline:0;min-width:0;margin-top:0!important}
+.air-admin-ui #kt_app_content .air-admin-field>.air-admin-spacer{display:none}
+.air-admin-ui #kt_app_content .air-admin-field>label{padding-top:9px;padding-bottom:0;font-size:13px;line-height:1.5;color:var(--nas-text)}
+.air-admin-ui #kt_app_content .air-admin-field>div>:is(.form-control,.form-select,.select2-container){max-width:680px}
+.air-admin-ui #kt_app_content :is(.form-control,.form-select){min-height:36px;padding:8px 11px;font-size:13px;line-height:1.5;border-radius:8px!important;background-color:var(--nas-surface);color:var(--nas-text)}
+.air-admin-ui #kt_app_content input.form-control{height:36px;padding-block:7px}
+.air-admin-ui #kt_app_content .form-control[type=number]{max-width:220px}
+.air-admin-ui #kt_app_content textarea.form-control{min-height:76px;max-width:100%;resize:vertical}
+.air-admin-ui #kt_app_content textarea[rows="5"]{height:96px}
+.air-admin-ui #kt_app_content :is(.form-text,.text-muted.fs-7){font-size:12px;line-height:1.6;margin-top:5px;max-width:680px;color:var(--nas-muted)!important}
+.air-admin-ui #kt_app_content :is(.form-label,.col-form-label){font-size:13px;font-weight:600;margin-bottom:6px}
+.air-admin-ui #kt_app_content .select2-container .select2-selection--single{min-height:36px;height:auto;padding:7px 11px;border-radius:8px!important;border-color:var(--nas-line)!important;background:var(--nas-surface)!important}
+.air-admin-ui #kt_app_content .select2-container .select2-selection__rendered{font-size:13px;line-height:20px;color:var(--nas-text)!important}
+.air-admin-ui #kt_app_content .select2-container .select2-selection--multiple{min-height:36px;border-radius:8px!important;background:var(--nas-surface)!important;border-color:var(--nas-line)!important}
+.air-admin-ui #kt_app_content .select2-container .select2-selection__choice{font-size:12px;margin-block:3px}
+.air-admin-ui #kt_app_content .btn:not(.btn-icon){display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;width:auto;padding:8px 12px!important;font-size:13px!important;line-height:1.5}
+.air-admin-ui #kt_app_content .btn-icon{height:36px;width:36px;min-width:36px;padding:7px!important}
+.air-admin-ui #kt_app_content .btn>i{font-size:18px!important;margin:0!important}
+.air-admin-ui #kt_app_content .form-check-input{width:18px;height:18px}
+.air-admin-ui #kt_app_content .form-switch .form-check-input{width:34px;height:20px}
+.air-admin-ui #kt_app_content .form-check-label{font-size:13px;line-height:1.6}
+.air-admin-ui #kt_app_content .accordion{border:1px solid var(--nas-line);border-radius:12px;overflow:hidden;box-shadow:none!important}
+.air-admin-ui #kt_app_content .accordion-item{background:var(--nas-surface);border-color:var(--nas-line)}
+.air-admin-ui #kt_app_content .accordion-button{min-height:48px;padding:13px 18px!important;gap:10px;background:var(--nas-surface)!important;color:var(--nas-text)!important;font-size:14px!important;line-height:1.5;box-shadow:none}
+.air-admin-ui #kt_app_content .accordion-button:not(.collapsed){background:var(--nas-page)!important;color:var(--nas-accent)!important}
+.air-admin-ui #kt_app_content .accordion-button::after{width:14px;height:14px;background-size:14px}
+.air-admin-ui #kt_app_content .accordion-body{padding:18px!important}
+.air-admin-ui .air-admin-section-icon{display:inline-flex;width:20px;height:20px;flex:0 0 20px;color:var(--nas-accent)}
+.air-admin-ui .air-admin-section-icon svg{display:block;width:20px;height:20px}
+.air-admin-ui .menu-icon>.air-admin-section-icon,.air-admin-ui .menu-icon>.air-admin-section-icon svg{width:21px;height:21px;color:inherit}
+.air-admin-ui #kt_app_content [data-repeater-item]{padding:10px 0;border-bottom:1px solid var(--nas-line)}
+.air-admin-ui #kt_app_content [data-repeater-item]:last-child{border-bottom:0}
+.air-admin-ui #kt_app_content [data-repeater-item] :is(.mt-md-8,.mt-md-10,.mt-3){margin-top:0!important}
+.air-admin-ui #kt_app_content [data-repeater-list=template_users] textarea{height:76px;min-height:76px}
+.air-admin-ui #kt_app_content .table>:not(caption)>*>*{padding:10px 12px!important;vertical-align:middle}
+.air-admin-ui #kt_app_content .table{font-size:13px}
+.air-admin-ui #kt_app_content .table-responsive{margin-top:10px}
+.air-admin-ui #kt_app_content .dt-layout-row{margin-block:10px}
+.air-admin-ui #kt_app_content .notice{padding:14px 16px!important;margin-bottom:16px!important}
+.air-admin-ui #kt_app_content :is(.alert,.notice) .fs-5{font-size:13px!important}
+.air-admin-ui #kt_app_content :is(.notice,.alert) p:last-child{margin-bottom:0}
+.air-admin-ui #kt_app_content .card-toolbar{margin-block:0!important;gap:8px}
+.air-admin-ui #kt_app_content .nas-personal-card form{max-width:none}
+@media(min-width:1200px){.air-admin-ui #kt_app_content .air-admin-field.air-admin-paired{grid-template-columns:150px minmax(100px,1fr) 150px minmax(100px,1fr)}}
+@media(max-width:1199px){.air-admin-ui #kt_app_content .air-admin-field{grid-template-columns:150px minmax(0,1fr)}}
+@media(max-width:767px){
+ .air-admin-ui #kt_app_content_container{padding-inline:14px!important}
+ .air-admin-ui #kt_app_content :is(.card-body,.accordion-body){padding:14px!important}
+ .air-admin-ui #kt_app_content .card-header{padding:12px 14px!important}
+ .air-admin-ui #kt_app_content .air-admin-field{grid-template-columns:minmax(0,1fr);gap:5px}
+ .air-admin-ui #kt_app_content .air-admin-field>label{padding-top:0;margin-bottom:0}
+ .air-admin-ui #kt_app_content .air-admin-field>div{margin-bottom:6px}
+ .air-admin-ui #kt_app_content .card-toolbar{width:auto;flex-wrap:wrap}
+ .air-admin-ui #kt_app_content .form-control[type=number]{max-width:100%}
+}
+
+/* Navigation icons follow the active theme, including hover and selection. */
+.air-admin-ui{--air-nav-icon:#526783;--air-nav-active:#2465da}
+.air-admin-ui[data-bs-theme="dark"]{--air-nav-icon:#a4b6cd;--air-nav-active:#79adff}
+.air-admin-ui #kt_app_sidebar .menu-icon{color:var(--air-nav-icon)!important}
+.air-admin-ui #kt_app_sidebar .menu-link:is(.active,:hover) .menu-icon{color:var(--air-nav-active)!important}
+.air-admin-ui #kt_app_sidebar .menu-icon .air-admin-section-icon{color:inherit!important}
+.air-admin-ui .menu-icon>.air-admin-section-icon svg{stroke-width:1.9}

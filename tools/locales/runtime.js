@@ -1,0 +1,34 @@
+
+const han=/[\u3400-\u9fff]/;
+function exact(value){if(typeof value!=='string')return value;const key=value.trim();return Object.hasOwn(dictionary,key)?value.slice(0,value.indexOf(key))+dictionary[key]+value.slice(value.indexOf(key)+key.length):value}
+function translate(value,language='en'){if(language!=='en'||typeof value!=='string'||!han.test(value))return value;const result=exact(value);if(result!==value)return result;
+ if(value.includes('<'))return value.split(/(<[^>]*>)/g).map(part=>part.startsWith('<')?part.replace(/(title|aria-label|placeholder|alt)=(['"])(.*?)\2/g,(_,a,q,text)=>a+'='+q+translate(text,language).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll("'",'&#39;')+q):translate(part,language)).join('');
+ return value.replace(/[\u3400-\u9fff]+(?:[，。；：、？！（）…·\s]+[\u3400-\u9fff]+)*[，。；：、？！（）…]?/g,part=>exact(part));
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={translate,dictionary};
+if(typeof window==='undefined'||typeof document==='undefined')return;
+let language='zh-CN';try{language=localStorage.getItem('air.language')==='en'?'en':'zh-CN'}catch{}
+const api={language,t:value=>translate(value,language),message:value=>language==='en'?exact(value):value,format:(key,values)=>translate(key,language).replace(/\{(\w+)\}/g,(_,name)=>String(values[name]??'')),setLanguage(value){try{if(window.top.AirCloudTransfers?.hasActive()){alert(language==='en'?'Wait for active transfers to finish before changing language.':'传输正在进行，请完成后再切换语言。');return false}}catch{}const next=value==='en'?'en':'zh-CN';try{localStorage.setItem('air.language',next);localStorage.setItem('i18nextLng',next)}catch{}document.cookie='AIR_LANGUAGE='+next+'; Path=/; Max-Age=31536000; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');try{window.top.location.reload()}catch{location.reload()}}};window.AirI18n=api;document.documentElement.lang=language;
+document.cookie='AIR_LANGUAGE='+language+'; Path=/; Max-Age=31536000; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');
+const sourceAttributes=new WeakMap();
+function localize(){for(const el of document.querySelectorAll('[data-air-i18n]')){const source=el.getAttribute('data-air-i18n')||el.textContent;const result=api.t(source);if(result!==el.textContent)el.textContent=result}
+ for(const el of document.querySelectorAll('[data-air-i18n-attrs]')){let source=sourceAttributes.get(el);if(!source){source={};for(const attr of ['title','aria-label','placeholder','alt'])if(el.hasAttribute(attr))source[attr]=el.getAttribute(attr);sourceAttributes.set(el,source)}for(const [attr,value]of Object.entries(source)){const result=api.t(value);if(el.getAttribute(attr)!==result)el.setAttribute(attr,result)}}
+ for(const el of document.querySelectorAll('#errorTxt,[role=status],[role=alert],.swal2-html-container,.swal2-title,.air-recycle-message')){const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;if(node.parentElement?.closest('input,textarea,.air-recycle-name,.air-task-file strong'))continue;const result=api.message(node.nodeValue);if(result!==node.nodeValue)node.nodeValue=result}}
+ const title=api.message(document.title);if(title!==document.title)document.title=title;
+}
+function mount(){if(document.querySelector('.air-language-switch')||document.getElementById('air-main-frame'))return;const header=document.querySelector('#kt_app_header_navbar');const target=header||document.body;
+
+ const host=document.createElement('div');host.className='air-language-switch';
+ host.innerHTML='<button type="button" class="air-language-trigger" aria-label="Language / 语言" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18Z"/></svg><span>'+(language==='en'?'EN':'CN')+'</span></button><div class="air-language-menu" role="menu" aria-label="Language / 语言" hidden></div>';
+ const trigger=host.querySelector('button'),menu=host.querySelector('[role=menu]');
+ const close=focus=>{menu.hidden=true;trigger.setAttribute('aria-expanded','false');if(focus)trigger.focus()};
+ for(const [value,code,label] of [['zh-CN','CN','中文'],['en','US','English']]){const row=document.createElement('button');row.type='button';row.className='air-language-option';row.setAttribute('role','menuitemradio');row.setAttribute('aria-checked',String(value===language));row.innerHTML='<span class="air-language-code">'+code+'</span><span>'+label+'</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';row.onclick=()=>{close(true);if(value!==language)api.setLanguage(value)};menu.append(row)}
+ const open=()=>{menu.hidden=false;trigger.setAttribute('aria-expanded','true');menu.querySelector('[aria-checked=true]').focus()};
+ trigger.onclick=()=>menu.hidden?open():close(false);
+ host.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();close(true)}else if(['ArrowDown','ArrowUp','Home','End'].includes(event.key)){event.preventDefault();if(menu.hidden){open();return}const rows=[...menu.children],index=rows.indexOf(document.activeElement);rows[event.key==='Home'?0:event.key==='End'?rows.length-1:(index+(event.key==='ArrowDown'?1:-1)+rows.length)%rows.length].focus()}});
+ document.addEventListener('click',event=>{if(!host.contains(event.target))close(false)});host.addEventListener('focusout',event=>{if(!host.contains(event.relatedTarget))close(false)});
+ target.append(host);if(target===document.body){host.classList.add('air-language-floating');document.body.classList.add('air-language-standalone')}}
+
+let queued=false;function schedule(){if(!queued){queued=true;requestAnimationFrame(()=>{queued=false;localize();mount()})}}
+function start(){localize();mount();new MutationObserver(schedule).observe(document.body||document.documentElement,{subtree:true,childList:true,characterData:true})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
