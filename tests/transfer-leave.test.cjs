@@ -1,0 +1,9 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+function setup(jobs){const handlers={},context={jobs,leaving:false,clearTimeout(){},setInterval(){},render(){},window:{AirI18n:{t:s=>s},addEventListener(name,fn){handlers[name]=fn}}};const source=fs.readFileSync(path.join(__dirname,'../storage/overlay/static/air-background.js'),'utf8');vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function hasPendingTransfers()'),source.lastIndexOf('\nrender();')),context);return {context,handlers}}
+test('refresh or close prompts for queued and active transfers, leaving them running when cancelled',()=>{
+ for(const status of ['ready','downloading','queued','uploading','saving']){let aborted=false;const {handlers}=setup([{status,controller:{abort(){aborted=true}}}]);let prompted=false;const event={preventDefault(){prompted=true}};handlers.beforeunload(event);assert.equal(prompted,true,status);assert.equal(event.returnValue,'');assert.equal(aborted,false)}
+ for(const task of [{status:'done'},{status:'error'},{status:'downloading',removed:true}]){const {handlers}=setup([task]);let prompted=false;handlers.beforeunload({preventDefault(){prompted=true}});assert.equal(prompted,false)}
+});
+test('confirmed departure cancels active requests and marks waiting downloads cancelled',()=>{
+ let aborted=0;const jobs=[{status:'downloading',controller:{abort(){aborted++}}},{status:'ready'},{status:'uploading',xhr:{abort(){aborted++}}},{status:'done'}];const {handlers,context}=setup(jobs);handlers.pagehide();assert.equal(aborted,2);assert.equal(context.leaving,true);assert.deepEqual(jobs.map(job=>job.status),['error','error','error','done']);handlers.pageshow();assert.equal(context.leaving,false);
+});

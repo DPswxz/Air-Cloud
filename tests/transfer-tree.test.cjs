@@ -7,3 +7,12 @@ test('repeat batches and upload/download directories stay independent',()=>{cons
 test('folder progress includes every file, including beyond the visible limit',()=>{const tasks=Array.from({length:150},(_,i)=>task('folder/'+i,1,'download',i<50?'done':'ready'));const folder=context.transferTree(tasks).children[0],sum=context.transferTotals(folder.tasks);assert.equal(folder.tasks.length,150);assert.equal(sum.total,1500);assert.equal(sum.bytes,700);assert.equal(sum.done,50)});
 
 test('folder summary retains completed siblings across status tabs',()=>{const all=[task('folder/1',1,'download','done'),task('folder/2')],summaries=context.transferFolderSummaries(all),visible=context.transferTree(all.filter(t=>t.status!=='done')).children[0],sum=context.transferTotals(summaries.get(visible.key));assert.equal(visible.tasks.length,1);assert.equal(sum.total,20);assert.equal(sum.bytes,12);assert.equal(sum.done,1)});
+test('download destinations contain their files and stay distinct even when directory names match',()=>{
+ const a={...task('one.txt'),sink:{name:'Downloads'},destinationKey:'a'},b={...task('sub/two.txt',2),sink:{name:'Downloads'},destinationKey:'b'},c={...task('three.txt',3),sink:{name:'Downloads'},destinationKey:'a'};
+ const tree=context.transferTree([a,b,c]);assert.equal(tree.children.length,2);assert.equal(tree.children[0].name,'Downloads/');assert.equal(tree.children[0].tasks.length,2);assert.equal(tree.children[0].children[1].task,c);assert.equal(tree.children[1].children[0].name,'sub');assert.equal(tree.children[1].children[0].children[0].task,b);
+});
+test('unknown-size ZIP downloads retain received bytes in directory summaries',()=>{
+ const pending={...task('archive.zip'),archive:true,total:0,bytes:2048,status:'downloading'};
+ assert.equal(context.transferTotals([pending]).bytes,2048);
+ pending.total=2048;pending.status='done';assert.equal(context.transferTotals([pending]).bytes,2048);assert.equal(context.transferTotals([pending]).done,1);
+});
