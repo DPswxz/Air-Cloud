@@ -43,7 +43,6 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 <ul class="air-share-names">{{range .ShareItems}}<li class="air-share-name"><i class="ki-duotone {{if .Directory}}ki-folder{{else}}ki-file{{end}} fs-2x text-primary"><i class="path1"></i><i class="path2"></i></i><span>{{.Name}}</span></li>{{end}}</ul>
                 <div class="air-share-time"><span data-air-i18n>分享时间：</span><time data-air-share-created="{{.ShareCreatedAt}}">—</time></div>
             </div>
-            <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>document.querySelectorAll('[data-air-share-created]').forEach(function(el){var stamp=Number(el.dataset.airShareCreated);if(stamp>0){el.dateTime=new Date(stamp).toISOString();el.textContent=new Date(stamp).toLocaleString('zh-CN',{hour12:false});}});</script>
             <div>
                 <a id="air-share-single-download" data-air-single="{{if eq (len .ShareItems) 1}}{{range .ShareItems}}{{if not .Directory}}true{{end}}{{end}}{{end}}" href="{{.DownloadLink}}" class="btn btn-primary btn-block">
                     <i class="ki-duotone ki-folder-down fs-2">
@@ -56,7 +55,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         </div>
     </div>
 </div>
-<script src="{{.StaticURL}}/air-background.js?v=20261017-resume1"></script>
+<script src="{{.StaticURL}}/air-background.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
 {const link=document.getElementById('air-share-single-download');if(link?.dataset.airSingle==='true'){const owner='share:'+link.href;AirCloudTransfers.connect({owner,share:true});link.addEventListener('click',event=>{event.preventDefault();AirCloudTransfers.enqueueFile({owner,url:link.href,name:document.querySelector('.air-share-name span').textContent,size:0}).catch(()=>alert(window.AirI18n.t('下载失败')))});}}
 </script>

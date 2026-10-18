@@ -211,13 +211,13 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.isDataTable('#file_manager_list'))return;const table=jQuery('#file_manager_list').DataTable();if(!table.rows({selected:true}).count())table.ajax.reload(null,false);},10000);
 </script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-navigation.js?v=20261016-en2"></script>
-<script src="{{.StaticURL}}/air-file-actions.js?v=20261016-en2"></script>
+<script src="{{.StaticURL}}/air-file-actions.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>window.AirRecycleConfig={csrf:'{{.CSRFToken}}'};</script>
-<script src="{{.StaticURL}}/air-recycle.js?v=20261016-en2"></script>
+<script src="{{.StaticURL}}/air-recycle.js?v=20261018-recycle-copy2"></script>
 <script src="{{.StaticURL}}/air-settings.js?v=20261016-en2"></script>
-<script src="{{.StaticURL}}/air-capacity.js?v=20261016-en2"></script>
-<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261017-single-download1"></script>
-{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261017-resume1"></script>{{end}}
+<script src="{{.StaticURL}}/air-capacity.js?v=20261018-i18n-audit1"></script>
+<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261018-i18n-audit1"></script>
+{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261018-i18n-audit1"></script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>AirTransfers.configure({share:{{if .ShareOwner}}true{{else}}false{{end}},manifestURL:'{{if .ShareOwner}}{{.DownloadURL}}{{end}}'.replace(/partial$/,'manifest'),enabled:{{if .FileURL}}true{{else}}false{{end}},owner:{{if .ShareOwner}}'share:{{.DownloadURL}}'{{else}}'{{.LoggedUser.Username}}'{{end}},csrf:'{{.CSRFToken}}',progressURL:'{{.ProfileURL}}'.replace(/\/profile$/,'/download-progress'),pingURL:'{{.PingURL}}'});</script>
 
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.js"></script>
@@ -646,10 +646,12 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                                 }
 
                                 return `<div class="d-flex align-items-center">
-                                            <i class="ki-duotone ${icon_name} fs-2x text-primary me-4">
-                                                <i class="path1"></i>
-                                                <i class="path2"></i>
-                                            </i>
+                                            <a href="${row['type'] == '2' ? '#' : row['url']}" class="d-inline-flex flex-shrink-0 ${row['type'] == '2' ? 'air-file-name' : ''}" aria-label="${data}">
+                                                <i class="ki-duotone ${icon_name} fs-2x text-primary me-4" aria-hidden="true">
+                                                    <i class="path1"></i>
+                                                    <i class="path2"></i>
+                                                </i>
+                                            </a>
                                             <a href="${row['type'] == '2' ? '#' : row['url']}" class="text-gray-800 text-hover-primary ${row['type'] == '2' ? 'air-file-name' : ''}">${data}</a>
                                         </div>`
                             }
@@ -673,12 +675,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                         render: function (data, type, row) {
                             if (type === 'display') {
                                 if (data){
-                                    return $.t('general.datetime', {
-                                        val: new Date(data),
-                                        formatParams: {
-                                            val: { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' },
-                                        }
-                                    });
+                                    return '<span data-air-date="'+Number(new Date(data))+'">'+new Date(data).toLocaleString(window.AirI18n.language,{year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'})+'</span>';
                                 }
                                 return ""
                             }
@@ -2449,7 +2446,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 </div>
             </div>
             <div class="modal-body">
-                <div class="d-flex flex-wrap gap-2 mb-3"><button id="air-files-picker" type="button" class="btn btn-sm btn-light-primary"><span data-air-i18n>选择文件</span></button><button id="air-folder-picker" type="button" class="btn btn-sm btn-light-primary"><span data-air-i18n>选择文件夹</span></button><button id="air-queue-clear" type="button" class="btn btn-sm btn-light"><span data-air-i18n>清空队列</span></button></div>
+                <div class="d-flex flex-wrap gap-2 mb-3"><button id="air-files-picker" type="button" class="btn btn-sm btn-light-primary"><svg class="air-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6M14 2v6h6M12 12v6M9 15h6"/></svg><span data-air-i18n>选择文件</span></button><button id="air-folder-picker" type="button" class="btn btn-sm btn-light-primary"><svg class="air-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span data-air-i18n>选择文件夹</span></button><button id="air-queue-clear" type="button" class="btn btn-sm btn-light"><svg class="air-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span data-air-i18n>清空队列</span></button></div>
                 <input id="air-folder-input" type="file" webkitdirectory multiple hidden>
                 <p class="form-text mb-2"><span data-air-i18n>可多选文件；上传文件夹会保留子目录结构。空文件夹不会被浏览器选择器读取。</span></p>
                 <div id="air-upload-queue" class="text-muted fs-7 mb-3" role="status"><span data-air-i18n>尚未选择文件</span></div>

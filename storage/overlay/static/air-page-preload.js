@@ -34,6 +34,7 @@ function layout(){try{if(!ensureClientView(active))return;syncPageTitle();
 let layoutFrame=0,layoutSettleTimer;
 function scheduleLayout(){if(!layoutFrame)layoutFrame=requestAnimationFrame(()=>{layoutFrame=0;layout();requestAnimationFrame(layout)});clearTimeout(layoutSettleTimer);layoutSettleTimer=setTimeout(layout,220)}
 window.addEventListener('resize',scheduleLayout);
+window.addEventListener('air:languagechange',scheduleLayout);
 
 
 const navigationView=document.createElement('section');navigationView.hidden=true;navigationView.setAttribute('role','status');navigationView.setAttribute('aria-live','polite');navigationView.style.cssText='position:fixed;z-index:4;padding:18px;box-sizing:border-box;background:var(--nas-surface,#fff);color:var(--nas-text,#20314a);';navigationView.innerHTML=window.AirI18n.t("<div hidden></div><div style=\"display:flex;align-items:center;justify-content:center;gap:12px;height:100%;min-height:0\"><span class=\"air-navigation-spinner\"></span><span>加载中…</span></div>");document.body.append(navigationView);const navigationStyle=document.createElement('style');navigationStyle.textContent='.air-navigation-spinner{width:22px;height:22px;border:2px solid #3478f633;border-top-color:#3478f6;border-radius:50%;animation:air-nav-spin .7s linear infinite}@keyframes air-nav-spin{to{transform:rotate(360deg)}}';document.head.append(navigationStyle);

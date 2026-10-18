@@ -1,9 +1,14 @@
-# 界面语言
+# 中英文界面维护
 
-默认语言为简体中文。登录、注册和页面顶部提供简体中文 / English 切换，选择保存在当前浏览器；切换会重新加载页面，让文件浏览框架、传输状态、对话框和后台设置一起应用新语言。切换前请等待正在进行的传输完成。
+原生界面的语言资源位于 `storage/overlay/static/locales/en` 和 `zh-CN`。英文资源必须包含中文资源的所有键，保留原有插值字段（例如 `{{- name}}`）。修改后更新 `templates/common/base.html` 的 i18next `defaultVersion`，避免浏览器继续使用旧缓存。
 
-管理员原有设置项继续使用 SFTPGo 内置的 `data-i18n` 与英文语言包。自定义界面使用 `window.AirI18n.t()` 和明确标记的 `data-air-i18n` 文案；文件名、路径、用户名、描述和输入框内容保留原文。浏览器系统权限弹窗由浏览器自己的语言设置决定。
+自定义文案维护在 `storage/overlay/static/air-i18n.en.json`，运行时源文件是 `tools/locales/runtime.js`。不要直接编辑生成的 `air-i18n.js`。执行 `node tools/build-locales.cjs` 生成部署资源；本机工作区使用 `--live` 同时生成本机资源。
 
-英文文案的可读源文件为 `storage/overlay/static/air-i18n.en.json`，运行时代码为 `tools/locales/runtime.js`。修改后执行 `node tools/build-locales.cjs` 生成随部署分发的 `air-i18n.js`；本机开发可加 `--live`。新增静态标签用 `<span data-air-i18n>中文</span>`，静态提示属性用 `data-air-i18n-attrs`，动态文案用 `AirI18n.t()`。服务器错误使用 `AirI18n.message()` 精确翻译，避免改写错误消息中用户自己的文件名。
+- `AirI18n.t` 用于固定的界面文案；HTML 片段会记录原始文案，切换语言不改变现有控件结构。
+- `AirI18n.format` 用于带参数的文案，参数作为原始数据处理，不翻译文件名、路径等用户内容。
+- `AirI18n.bindText(element, source, values)` 用于动态提示和统计，保留原始文案及参数，可双向切换语言。
+- `AirI18n.bindMessage` 用于已生成的提示或服务端信息，仅转换已知文案，未知内容保持原样。
+- 用 `data-air-i18n-skip` 标识用户内容。不要通过全局替换网页正文实现翻译。
+- 更新脚本引用的版本号；原生页面壳和注册页也有脚本引用。部署本机前同步源码，重启前检查活动连接。
 
-邮箱验证邮件与找回密码邮件跟随发起请求时的界面语言。语言偏好不改变账号资料或权限。运行 `node --test tests/localization.test.cjs` 检查常用翻译及文件名保护范围。
+运行 `npm run audit:locales` 检查自定义脚本文案是否完整转换为英文，运行 `npm test` 检查原生资源键、动态提示、无刷新切换、计数和用户内容保护。新增加的中文提示应一并加入英文词典和相应功能的切换测试。

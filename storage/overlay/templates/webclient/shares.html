@@ -39,7 +39,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 </div>
             </div>
 
-            <table id="dataTable" class="table align-middle table-row-dashed fs-6 gy-5">
+            <table id="dataTable" role="table" class="table align-middle table-row-dashed fs-6 gy-5">
                 <thead>
                     <tr class="text-start text-muted fw-bold fs-6 gs-0">
                         <th data-i18n="general.name">Name</th>
@@ -221,7 +221,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 },
                 columns: [
                     {
-                        data: "name",
+                        data: "name", className: "air-share-name-cell",
                         render: function(data, type, row) {
                             if (type === 'display') {
                                 return `<div class="air-share-name"><i class="ki-duotone ${row.directory ? 'ki-folder' : 'ki-file'} fs-2x text-primary"><i class="path1"></i><i class="path2"></i></i><span>${escapeHTML(data)}</span></div>`;
@@ -234,18 +234,19 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         render:function(data,type,row){if(type!=='display')return '';return `${window.AirI18n.t("<div class=\"air-share-actions\"><a href=\"#\" class=\"btn btn-sm btn-light-primary\" data-table-action=\"show_link\">链接</a><a href=\"#\" class=\"btn btn-sm btn-light-primary\" data-table-action=\"edit_row\">编辑</a><a href=\"#\" class=\"btn btn-sm btn-light-danger\" data-table-action=\"delete_row\">删除</a></div>")}`;}
                     },
                     {
-                        data: "last_use_at", defaultContent: 0, searchable: false,
+                        data: "last_use_at", defaultContent: 0, searchable: false, className: "air-share-used-cell",
                         render: function(data,type,row){
                             const stamp=Number(data)||0;
                             if(type!=='display')return stamp;
-                            if(!stamp)return window.AirI18n.t("未使用");
+                            const label='<span class="air-share-mobile-label" data-air-i18n>上次使用时间</span>';
+                            if(!stamp)return label+'<span>'+window.AirI18n.t("未使用")+'</span>';
                             const date=new Date(stamp),pad=n=>String(n).padStart(2,'0');
-                            return date.getFullYear()+'/'+pad(date.getMonth()+1)+'/'+pad(date.getDate())+' '+pad(date.getHours())+':'+pad(date.getMinutes());
+                            return label+'<span>'+date.getFullYear()+'/'+pad(date.getMonth()+1)+'/'+pad(date.getDate())+' '+pad(date.getHours())+':'+pad(date.getMinutes())+'</span>';
                         }
                     },
                     {
-                        data: "used_tokens", defaultContent: 0, searchable: false,
-                        render: function(data,type,row){return Math.max(0,Number(data)||0);}
+                        data: "used_tokens", defaultContent: 0, searchable: false, className: "air-share-count-cell",
+                        render: function(data,type,row){const count=Math.max(0,Number(data)||0);return type==='display'?'<span class="air-share-mobile-label" data-air-i18n>下载次数</span><span>'+count+'</span>':count;}
                     },
 
                 ],

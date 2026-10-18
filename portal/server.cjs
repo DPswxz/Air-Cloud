@@ -2,12 +2,16 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const identity = require('./proxy-identity.cjs').createProxyIdentity(process.env.NAS_TRUSTED_PROXIES);
 const upstream = new URL(process.env.NAS_UPSTREAM || 'http://storage:8080');
 if (upstream.protocol !== 'http:') throw new Error('NAS_UPSTREAM must use the internal HTTP network');
 const home = fs.readFileSync(path.join(__dirname, 'index.html'));
 const logo = fs.readFileSync(path.join(__dirname, 'logo.svg'));
+const accounts=require('./account-switcher.cjs').createAccounts({directory:process.env.NAS_ACCOUNTS_DIR||require('node:path').join(require('node:os').homedir(),'.air-cloud-accounts'),upstream:()=>upstream.origin,secure:req=>identity(req).protocol==='https',address:req=>identity(req).address});
 const server = http.createServer(async (req, res) => {
   const pathname = new URL(req.url, 'http://nas').pathname;
+  if(await accounts.handle(req,res))return;
+  if(/^\/web\/(client|admin)\/logout$/.test(pathname))accounts.forget(req);
   const send = (status, type, data) => {
     res.writeHead(status, {'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin'});
     res.end(req.method === 'HEAD' ? undefined : data);
@@ -36,6 +40,9 @@ const server = http.createServer(async (req, res) => {
   for (const key of Object.keys(headers)) {
     if (key.startsWith('x-forwarded-') || key.startsWith('x-nas-') || ['forwarded', 'cf-connecting-ip', 'connection', 'proxy-connection', 'proxy-authorization'].includes(key)) delete headers[key];
   }
+  const client = identity(req);
+  headers['x-real-ip'] = client.address;
+  headers['x-forwarded-proto'] = client.protocol;
   // Preserve the public Host for upstream CSRF checks and generated share URLs.
   const proxy = http.request({hostname: upstream.hostname, port: upstream.port || 80, path: req.url, method: req.method, headers}, response => {
     res.writeHead(response.statusCode, response.headers);

@@ -11,6 +11,7 @@ before(async () => {
   });
   await new Promise(r=>mock.listen(0,'127.0.0.1',r));
   process.env.NAS_UPSTREAM = `http://127.0.0.1:${mock.address().port}`;
+  process.env.NAS_TRUSTED_PROXIES = '';
   portal = require('../portal/server.cjs');
   await new Promise(r=>portal.listen(0,'127.0.0.1',r));
   base=`http://127.0.0.1:${portal.address().port}`;
@@ -25,10 +26,12 @@ test('backend health failures are reported',async()=>{
   healthy=false; assert.equal((await fetch(base+'/healthz')).status,503); healthy=true;
 });
 test('proxy preserves paths, cookies and strips spoofed identity',async()=>{
-  const r=await fetch(base+'/web/client/files?path=%2Fphotos',{headers:{'x-forwarded-for':'1.2.3.4','x-nas-client-ip':'1.2.3.4','cf-connecting-ip':'1.2.3.4',cookie:'session=mine'}});
+  const r=await fetch(base+'/web/client/files?path=%2Fphotos',{headers:{'x-forwarded-for':'1.2.3.4','x-real-ip':'1.2.3.4','x-forwarded-proto':'https','x-nas-client-ip':'1.2.3.4','cf-connecting-ip':'1.2.3.4',cookie:'session=mine'}});
   assert.ok(r.headers.get('set-cookie').includes('session=test'));
   const data=await r.json(); assert.equal(data.url,'/web/client/files?path=%2Fphotos'); assert.equal(data.headers.cookie,'session=mine');
   assert.equal(data.headers.host,new URL(base).host);
+  assert.equal(data.headers['x-real-ip'],'127.0.0.1');
+  assert.equal(data.headers['x-forwarded-proto'],'http');
   for(const name of ['x-forwarded-for','x-nas-client-ip','cf-connecting-ip']) assert.equal(data.headers[name],undefined);
 });
 test('binary uploads stream without corruption',async()=>{

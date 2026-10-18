@@ -57,9 +57,9 @@ docker compose up -d --wait --wait-timeout 180
 - **启动脚本提示 Docker 不可用**：先启动 Docker，检查 WSL 2 / 虚拟化，以及 Linux containers 模式。运行 `docker info`。
 - **镜像拉取失败**：检查访问 Docker Hub 的网络和镜像服务配置，不要把私人 registry token 写进项目代码。
 - **局域网打不开**：检查 `.env` 是否为 `NAS_BIND=0.0.0.0`、是否重新启动、主机防火墙和访客 Wi-Fi 隔离。
-- **登录被临时限制**：内置防暴力破解机制会封禁重复失败。代理后端默认只看到网关地址，共享出口可能共同受限；稍后重试，查看日志排查。不要直接信任来自公网的转发身份头。
+- **登录被临时限制**：内置防暴力破解机制会封禁重复失败。portal 向后端传递经过校验的连接来源 IP。若前面还有反向代理，需通过 `NAS_TRUSTED_PROXIES` 配置信任的代理地址，否则限流会使用代理地址；共享公网出口仍可能共同受限。不要信任任意公网转发身份头。
 - **空间不足**：检查 Docker 数据盘空间及用户配额。只移动代码目录不会移动 Docker 数据卷。
-- **访问外部云存储/SMTP 失败**：文件服务默认位于隔离内网，不具备互联网出站能力。需要这些功能时自行调整 Compose 网络并测试访问控制。
+- **访问外部云存储/SMTP 失败**：storage 通过独立 egress 网络访问外部服务，无主机端口映射。检查主机出站防火墙、DNS、SMTP 端口及认证配置。
 - **服务无法启动**：执行 `docker compose logs --tail 100`，排查端口占用、挂载权限和磁盘空间。不要通过删除数据卷解决启动问题。
 
 ## 定制源码与存储布局
@@ -69,3 +69,9 @@ docker compose up -d --wait --wait-timeout 180
 默认用户目录位于 files 卷的 `/srv/sftpgo/data`，回收站位于 `/srv/sftpgo/.air-recycle`，头像偏好位于 `/srv/sftpgo/avatars`，自动备份位于 `/srv/sftpgo/backups`。回收站放在用户根目录之外，备份脚本会完整包含这些数据。自定义用户主目录必须与回收站位于同一文件系统，否则删除明确失败；不会退回永久删除。Linux 使用不覆盖目标的原子重命名。回收站只处理网页文件管理和对应 HTTP 删除操作；SFTP/FTP/WebDAV 删除沿用原协议行为。
 
 验证命令：`npm test`、`docker compose build storage`，随后运行 `.github/workflows/check.yml` 中的会话、分享和 NAS 集成测试。构建阶段验证 Linux 回收站目录权限与不覆盖重命名。测试需使用隔离的测试用户与卷。
+
+## 浏览器账号快速切换
+
+登录后可在右上角用户菜单保存和切换账号，登录页也显示该浏览器已保存的账号。最多保留 10 个账号；会话过期后仍需重新登录。注销当前账号会移除该记录，“退出所有账号”会注销该浏览器保存的全部账号。管理员文件管理的内部临时身份不会保存到列表。
+
+portal 通过 HttpOnly、SameSite Cookie 标识浏览器，原生会话加密保存在 `portal_accounts` 卷的 `/home/node/.air-cloud-accounts`，不保存密码。该卷应与源码、配置分开管理，不提交账号会话或密钥。清除浏览器 Cookie 后需重新添加账号。

@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -39,15 +40,8 @@ func nasRecycleRoot(u *dataprovider.User) string {
 	hash := sha256.Sum256([]byte(u.Username))
 	return filepath.Join(filepath.Dir(dataprovider.GetProviderConfig().UsersBaseDir), nasRecycleDir, hex.EncodeToString(hash[:16]))
 }
-func nasRecycleDays(root string) int {
-	var p struct {
-		Days int `json:"days"`
-	}
-	data, err := os.ReadFile(filepath.Join(root, "settings.json"))
-	if err == nil && json.Unmarshal(data, &p) == nil && p.Days == 7 {
-		return 7
-	}
-	return 30
+func nasRecycleDays(_ string) int {
+	return 7
 }
 func nasRecycleID(id string) bool {
 	b, e := hex.DecodeString(id)
@@ -259,13 +253,42 @@ func handleNASRecycle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
+		if r.URL.Query().Has("id") {
+			id := r.URL.Query().Get("id")
+			item, readErr := nasRecycleRead(root, id)
+			if readErr != nil || !item.Directory {
+				sendAPIResponse(w, r, nil, "回收站文件夹不存在", http.StatusNotFound)
+				return
+			}
+			offset := 0
+			if value := r.URL.Query().Get("offset"); value != "" {
+				var parseErr error
+				offset, parseErr = strconv.Atoi(value)
+				if parseErr != nil {
+					sendAPIResponse(w, r, nil, "请求无效", http.StatusBadRequest)
+					return
+				}
+			}
+			page, browseErr := nasRecycleChildren(filepath.Join(root, id, "payload"), r.URL.Query().Get("path"), offset)
+			if browseErr != nil {
+				status := http.StatusInternalServerError
+				if errors.Is(browseErr, os.ErrPermission) {
+					status = http.StatusForbidden
+				} else if errors.Is(browseErr, os.ErrNotExist) {
+					status = http.StatusNotFound
+				}
+				sendAPIResponse(w, r, nil, "无法读取回收站文件夹", status)
+				return
+			}
+			json.NewEncoder(w).Encode(page)
+			return
+		}
 		json.NewEncoder(w).Encode(map[string]any{"days": nasRecycleDays(root), "items": nasRecycleItems(root)})
 		return
 	}
 	var req struct {
 		Action string `json:"action"`
 		ID     string `json:"id"`
-		Days   int    `json:"days"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
@@ -274,21 +297,8 @@ func handleNASRecycle(w http.ResponseWriter, r *http.Request) {
 	}
 	switch req.Action {
 	case "settings":
-		if req.Days != 7 && req.Days != 30 {
-			sendAPIResponse(w, r, nil, "请选择 7 天或 30 天", 400)
-			return
-		}
-		if err = nasRecyclePrepare(root); err == nil {
-			data, _ := json.Marshal(map[string]int{"days": req.Days})
-			temp := filepath.Join(root, "settings.tmp")
-			err = os.WriteFile(temp, data, 0600)
-			if err == nil {
-				err = os.Rename(temp, filepath.Join(root, "settings.json"))
-			}
-		}
-		if err == nil {
-			nasRecycleExpired(root)
-		}
+		sendAPIResponse(w, r, nil, "Retention is fixed at 7 days", http.StatusBadRequest)
+		return
 	case "restore":
 		var item nasRecycleEntry
 		item, err = nasRecycleRead(root, req.ID)

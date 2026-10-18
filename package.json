@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "Turn a spare computer into a personal browser-based NAS",
-  "scripts": {"test": "node --test tests/*.test.cjs", "sync:live": "node tools/sync-live.cjs"},
-  "engines": {"node": ">=22"},
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "sync:live": "node tools/sync-live.cjs",
+    "audit:locales": "node tools/audit-locales.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "AGPL-3.0-only"
 }

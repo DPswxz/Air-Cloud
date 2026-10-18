@@ -11,9 +11,11 @@ ENV GOFLAGS=-mod=readonly
 COPY tests/recycle_linux_test.go /tmp/recycle_linux_test.go
 RUN cp internal/httpd/nas_recycle_linux.go /tmp/nas_recycle_linux.go && go test /tmp/nas_recycle_linux.go /tmp/recycle_linux_test.go
 RUN go test internal/httpd/nas_registration_policy.go internal/httpd/nas_registration_test.go
+RUN go test internal/httpd/nas_archive.go internal/httpd/nas_archive_cache.go internal/httpd/nas_archive_test.go internal/httpd/nas_archive_cache_test.go
 RUN go build -trimpath -ldflags "-s -w" -o /tmp/sftpgo .
 
 FROM drakkan/sftpgo:v2.7.6
+RUN mkdir -p /tmp/air-cloud-archives-v1 && chmod 700 /tmp/air-cloud-archives-v1
 COPY --from=builder /tmp/sftpgo /usr/local/bin/sftpgo
 COPY --from=builder /source/templates /usr/share/sftpgo/templates
 COPY --from=builder /source/static /usr/share/sftpgo/static

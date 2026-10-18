@@ -1,5 +1,5 @@
 (()=>{
-let frame=document.getElementById('air-main-frame')||{contentWindow:window,contentDocument:document,addEventListener(){},removeEventListener(){}};const dateFormatter=new Intl.DateTimeFormat(window.AirI18n.language,{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});let renderTimer,lastRender=0;let leaving=false;let owner='',config={},jobs=[],tab='active',uploading=0,downloading=0,sequence=0,batchSequence=0,minimized=true;
+let frame=document.getElementById('air-main-frame')||{contentWindow:window,contentDocument:document,addEventListener(){},removeEventListener(){}};let dateFormatter=new Intl.DateTimeFormat(window.AirI18n.language,{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});let renderTimer,lastRender=0;let leaving=false;let owner='',config={},jobs=[],tab='active',uploading=0,downloading=0,sequence=0,batchSequence=0,minimized=true;
 let resumeEngine;const resumeReady=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/static/air-download-resume.js?v=20261017-resume6';script.onload=()=>{resumeEngine=AirDownloadResume.create({translate:value=>window.AirI18n.t(value)});resolve(resumeEngine)};script.onerror=()=>reject(Error(window.AirI18n.t("无法加载断点续传组件，请刷新后重试。")));document.head.append(script)});resumeReady.catch(()=>{});
 let restoredOwner='';
 async function restoreDownloads(account){try{await resumeReady;const records=await resumeEngine.list(account);if(owner!==account||restoredOwner===account)return;restoredOwner=account;for(const record of records){if(jobs.some(t=>t.resumeKey===record.key))continue;const destinationKey=record.destinationKey||await downloadDestinationKey(record.sink);if(owner!==account)return;jobs.push({...record,destinationKey,resumeKey:record.key,committed:record.offset,bytes:record.offset,type:'download',id:++sequence,status:'error',error:window.AirI18n.t("下载已中断，可继续"),browserOnly:false})}if(records.length){tab='error';minimized=false;render()}}catch(error){if(owner===account)notice(error.message)}}
@@ -130,7 +130,7 @@ function appendTransferFile(rows,t,depth){
  row.querySelector('.air-task-file-icon').innerHTML=transferIcon(false);row.querySelector('strong').textContent=t.name;row.querySelector('strong').title=t.sink?window.AirI18n.t("保存位置：")+t.sink.name+'/'+(t.relative||t.name):t.relative||t.name;
  const phase={packing:window.AirI18n.t("正在打包…"),queued:window.AirI18n.t("等待上传"),ready:window.AirI18n.t("等待下载"),uploading:window.AirI18n.t("上传中"),saving:window.AirI18n.t("确认保存中"),downloading:t.verifying?window.AirI18n.t("正在校验断点…"):window.AirI18n.t("下载中"),done:t.type==='upload'?window.AirI18n.t("上传完成"):window.AirI18n.t("下载完成"),error:window.AirI18n.t("失败"),paused:window.AirI18n.t("已暂停"),pausing:window.AirI18n.t("正在暂停…"),cancelled:window.AirI18n.t("已取消")}[t.status]||t.status;
  const measuring=t.verifying&&t.verificationProgress?t.verificationProgress:t;const rate=['uploading','downloading'].includes(t.status)?transferRate(measuring):0;const shownProgress=t.verifying&&measuring.total?Math.min(100,measuring.bytes/measuring.total*100):progress;
- row.querySelector('small').textContent=(t.error||phase)+(t.status==='uploading'||t.status==='downloading'?' · '+shownProgress.toFixed(1)+'% · '+size(rate)+'/s':'')+(t.type==='download'&&t.status==='downloading'?' · '+downloadETA(measuring,rate):'');
+ row.querySelector('small').textContent=(t.error?window.AirI18n.message(t.error):phase)+(t.status==='uploading'||t.status==='downloading'?' · '+shownProgress.toFixed(1)+'% · '+size(rate)+'/s':'')+(t.type==='download'&&t.status==='downloading'?' · '+downloadETA(measuring,rate):'');
  if(t.verifying&&t.status==='downloading'){row.querySelector('small').textContent=window.AirI18n.format("已下载 {download}% · 校验 {verify}%",{download:progress.toFixed(1),verify:shownProgress.toFixed(1)})+' · '+size(rate)+'/s · '+downloadETA(measuring,rate).replace(window.AirI18n.t("预计剩余"),window.AirI18n.t("校验剩余"));}
 
  row.querySelector('.air-task-size').textContent=size(t.total);const time=row.querySelector('time'),showETA=t.type==='download'&&t.status==='downloading';time.hidden=showETA;time.textContent=t.timeLabel||(t.timeLabel=dateFormatter.format(t.created));time.title=t.timeLabel||(t.timeLabel=dateFormatter.format(t.created));row.querySelector('.air-task-line span').style.width=progress+'%';row.classList.toggle('air-task-failed',group(t)==='error');
@@ -147,7 +147,7 @@ function appendTransferFile(rows,t,depth){
 }
 
 function show(){minimized=false;tab='active';render()}
-function notice(message){panel.querySelector('#air-task-notice').textContent=message||''}
+function notice(message){window.AirI18n.bindMessage(panel.querySelector('#air-task-notice'),message||'')}
 function remove(t){if(t.resumeKey&&!t.preserveResume)resumeReady.then(()=>resumeEngine.remove(t)).catch(()=>{});t.removed=true;t.xhr?.abort();t.controller?.abort();t.file=null;if(t.timer)clearTimeout(t.timer);if(t.status==='queued'||t.status==='ready')render();else if(t.type==='download'&&!t.sink&&t.status==='downloading'){t.complete?.();}render()}
 function clear(){restoredOwner='';for(const t of jobs)t.removed=true;for(const t of jobs){t.preserveResume=true;remove(t)}jobs=[];collapsedFolders.clear();notice('');draw()}
 function apiURL(name){return new URL(config.progressURL.replace(/download-progress$/,name),location.origin).href}
@@ -207,6 +207,7 @@ function hasPendingTransfers(){return jobs.some(t=>!t.removed&&['queued','ready'
 setInterval(()=>{if(!leaving&&jobs.some(t=>!t.removed&&t.status==='downloading'))render()},1000);
 window.addEventListener('beforeunload',e=>{if(hasPendingTransfers()){e.preventDefault();e.returnValue=''}});
 window.addEventListener('pagehide',()=>{leaving=true;for(const task of jobs){if(task.removed||!['queued','ready','uploading','saving','downloading','pausing','packing'].includes(task.status))continue;task.status='error';task.error=window.AirI18n.t("已取消");clearTimeout(task.timer);task.controller?.abort();task.xhr?.abort();task.downloadFrame?.remove()}});
+window.addEventListener('air:languagechange',()=>{dateFormatter=new Intl.DateTimeFormat(window.AirI18n.language,{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});for(const task of jobs)delete task.timeLabel;render()});
 window.addEventListener('pageshow',()=>{if(leaving){leaving=false;render()}});
 render();
 })();

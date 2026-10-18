@@ -291,3 +291,188 @@ img[src*="/nas-avatars/"]{color-scheme:light}
 .air-progress-indeterminate>span,.air-progress-indeterminate>i{width:32%!important;background:linear-gradient(90deg,transparent,var(--nas-accent) 35%,#46b5f5 65%,transparent)!important;transition:none;animation:air-transfer-flow 1.6s linear infinite;animation-delay:var(--air-flow-delay,0ms);will-change:transform}
 @keyframes air-transfer-flow{from{transform:translateX(-110%)}to{transform:translateX(325%)}}
 @media(prefers-reduced-motion:reduce){.air-progress-indeterminate>span,.air-progress-indeterminate>i{animation:none;transform:translateX(106%)}}
+/* Share rows stack on phones so actions cannot squeeze filenames into a column. */
+.air-share-mobile-label{display:none}
+@media(max-width:700px){
+  .air-shares-card #dataTable{display:block;width:100%!important;table-layout:auto}
+  .air-shares-card #dataTable colgroup{display:none}
+  .air-shares-card #dataTable thead{display:block;width:100%}
+  .air-shares-card #dataTable thead tr{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1fr);height:auto!important}
+  .air-shares-card #dataTable thead th{width:auto!important;min-width:0!important;padding-right:14px!important;white-space:normal;font-size:12px!important}
+  .air-shares-card #dataTable thead .air-share-actions-heading{display:none}
+  .air-shares-card #table_body{display:block;width:100%}
+  .air-shares-card #table_body>tr{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;height:auto!important;padding:18px 0;border-bottom:1px dashed var(--nas-line)}
+  .air-shares-card #table_body>tr:last-child{border-bottom:0}
+  .air-shares-card #table_body>tr>td{display:block;width:auto!important;min-width:0!important;max-width:none;padding:0!important;border:0!important;white-space:normal;text-align:left!important}
+  .air-shares-card #table_body>tr>td:first-child{grid-column:1/-1;grid-row:1}
+  .air-shares-card .air-share-name{align-items:flex-start;gap:10px}
+  .air-shares-card .air-share-name>span{min-width:0;font-size:15px;line-height:1.5;overflow-wrap:anywhere;word-break:normal}
+  .air-shares-card .air-share-name>.ki-duotone{margin-top:2px}
+  .air-shares-card #table_body>tr>td:nth-child(3){grid-column:1;grid-row:2}
+  .air-shares-card #table_body>tr>td:nth-child(4){grid-column:2;grid-row:2}
+  .air-shares-card .air-share-mobile-label{display:block;margin-bottom:3px;font-size:12px;color:var(--nas-muted);font-weight:400;line-height:1.5}
+  .air-shares-card :is(.air-share-used-cell,.air-share-count-cell)>span:last-child{font-size:13px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .air-shares-card #table_body>tr>td:nth-child(2){grid-column:1/-1;grid-row:3}
+  .air-shares-card .air-share-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;white-space:normal}
+  .air-shares-card #table_body .air-share-actions>.btn{width:100%!important;min-height:44px!important;height:44px!important;padding:0 6px!important}
+  .air-shares-card .air-shares-toolbar .form-control{width:100%!important;min-width:0}
+  .air-shares-card #table_body .dataTables_empty{grid-column:1/-1;padding:24px 0!important;text-align:center}
+  .air-shares-card #dataTable_wrapper>.row{row-gap:12px}
+  .air-shares-card #dataTable_wrapper .dt-toolbar{flex-wrap:wrap;gap:8px;justify-content:space-between!important}
+  .air-shares-card #dataTable_wrapper label:has(select[aria-controls="dataTable"]){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .air-shares-card #dataTable_wrapper label .select2-container{width:84px!important}
+  .air-shares-card #dataTable_wrapper .dt-info{margin:0!important}
+  .air-shares-card>.card-header{background:var(--nas-surface)!important}
+  .air-shares-card #table_body>tr>td:is(:nth-child(3),:nth-child(4)):not(:has(.air-share-mobile-label))::before{display:block;margin-bottom:3px;font-size:12px;color:var(--nas-muted);font-weight:400;line-height:1.5}
+  .air-shares-card #table_body>tr>td:nth-child(3):not(:has(.air-share-mobile-label))::before{content:"上次使用时间"}
+  .air-shares-card #table_body>tr>td:nth-child(4):not(:has(.air-share-mobile-label))::before{content:"下载次数"}
+  :lang(en) .air-shares-card #table_body>tr>td:nth-child(3):not(:has(.air-share-mobile-label))::before{content:"Last used"}
+  :lang(en) .air-shares-card #table_body>tr>td:nth-child(4):not(:has(.air-share-mobile-label))::before{content:"Downloads"}
+  #link_modal :is(#readShare>.d-flex,#writeShare){display:flex;flex-wrap:wrap;gap:8px}
+  #link_modal #writeShare>p{flex-basis:100%}
+}
+/* Mobile layouts for files, recycle bin and their shared controls. */
+@media(max-width:700px){
+  .nas-files-card>.card-header{gap:12px!important}
+  .nas-files-card>.card-header>.card-title{order:0;flex:1 0 100%;width:100%;min-width:0;margin:0!important}
+  .nas-files-card>.card-header>.card-title>div{width:100%;min-width:0}
+  .nas-files-card>.card-header>.card-toolbar{order:1;width:100%!important}
+  .nas-files-card [data-kt-filemanager-table-toolbar="base"]{flex-wrap:wrap;gap:8px;width:100%}
+  .nas-files-card>.card-header .card-toolbar [data-kt-filemanager-table-toolbar="base"]>.btn{min-height:44px!important;height:44px!important;margin:0!important}
+  .nas-files-card :is(#air-parent-directory,#air-refresh-files){width:44px!important;min-width:44px!important;flex:0 0 44px}
+  .nas-files-card>.card-body>.flex-stack{align-items:stretch!important;flex-direction:column;gap:12px}
+  .nas-files-card [data-kt-filemanager-table-nav-bar="base"]{max-width:100%;width:100%;white-space:normal;text-align:left}
+  .nas-files-card [data-kt-filemanager-table-nav-bar="base"] :is(div,a,span){min-width:0;max-width:100%;overflow-wrap:anywhere}
+  .nas-files-card [data-kt-filemanager-table-toolbar="selected"]{align-items:stretch!important;flex-direction:column;gap:8px;width:100%}
+  .nas-files-card [data-kt-filemanager-table-toolbar="selected"]>.fw-bold{margin-right:0!important}
+  .nas-files-card .air-selected-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .nas-files-card .air-selected-actions :is(.menu-item,.menu-link){min-width:0;width:100%;margin:0}
+  .nas-files-card .air-selected-actions .menu-link{justify-content:center;min-height:44px;white-space:normal;overflow-wrap:anywhere}
+  .nas-files-card #file_manager_new_folder{flex-wrap:wrap;gap:8px}
+  .nas-files-card #file_manager_new_folder_input{flex:1 1 140px;min-width:0;max-width:none!important;margin:0!important}
+  .nas-files-card #file_manager_new_folder>.btn{width:44px!important;height:44px!important;margin:0!important}
+  .nas-files-card #file_manager_list{display:block;width:100%!important;table-layout:auto}
+  .nas-files-card #file_manager_list colgroup{display:none}
+  .nas-files-card #file_manager_list :is(thead,tbody){display:block;width:100%}
+  .nas-files-card #file_manager_list thead tr{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,.7fr) minmax(0,1.3fr);height:auto!important;gap:8px}
+  .nas-files-card #file_manager_list thead th{width:auto!important;min-width:0!important;height:auto!important;white-space:normal;padding:10px 0!important;font-size:11px!important}
+  .nas-files-card #file_manager_list thead th:last-child{display:none}
+  .nas-files-card #file_manager_list thead :is(.dt-column-header,.dt-column-title){height:auto!important;min-height:24px;white-space:normal!important;max-width:100%}
+  .nas-files-card #file_manager_list tbody>tr{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,1.5fr) 44px;gap:8px 10px;height:auto!important;padding:16px 0;border-bottom:1px dashed var(--nas-line)}
+  .nas-files-card #file_manager_list tbody>tr:last-child{border-bottom:0}
+  .nas-files-card #file_manager_list tbody>tr>td{display:block;width:auto!important;min-width:0!important;max-width:none;padding:0!important;border:0!important;margin:0!important;text-align:left!important;white-space:normal}
+  .nas-files-card #file_manager_list tbody>tr>td:first-child{grid-column:1;grid-row:1}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2){grid-column:2/4;grid-row:1}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2)>.d-flex{min-width:0;align-items:flex-start!important}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) :is(a,span){min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal;font-size:15px;line-height:1.5}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) .ki-duotone{flex-shrink:0;margin-right:10px!important}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(3){grid-column:2;grid-row:2;font-size:12px;color:var(--nas-muted)}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(4){grid-column:3/-1;grid-row:2;font-size:12px;color:var(--nas-muted);overflow-wrap:anywhere}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5){grid-column:4;grid-row:1;align-self:center;justify-self:end}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5):not(:has(a,button)){display:none}
+  .nas-files-card #file_manager_list tbody>tr:not(:has(>td:nth-child(5) a,>td:nth-child(5) button))>td:nth-child(2){grid-column:2/-1}
+  .nas-files-card #file_manager_list tbody>tr>td:is(:nth-child(3),:nth-child(4))::before{display:block;margin-bottom:3px;color:var(--nas-muted);font-size:12px;font-weight:400;line-height:1.5}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(3)::before{content:'大小'}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(4)::before{content:'最近修改'}
+  .nas-files-card #file_manager_list tbody>tr>td:is(:nth-child(3),:nth-child(4)):empty::after{content:'—'}
+  :lang(en) .nas-files-card #file_manager_list tbody>tr>td:nth-child(3)::before{content:'Size'}
+  :lang(en) .nas-files-card #file_manager_list tbody>tr>td:nth-child(4)::before{content:'Last modified'}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5)>.d-flex{justify-content:flex-end!important}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .btn{width:44px!important;height:44px!important;min-height:44px!important}
+  .nas-files-card #file_manager_list .dataTables_empty{grid-column:1/-1!important;padding:24px 0!important;text-align:center!important}
+  .nas-files-card #file_manager_list .form-check{min-height:32px;margin:0!important;align-items:flex-start}
+  .nas-files-card #file_manager_list .form-check-input{width:22px;height:22px;margin:0!important}
+  .air-recycle-card .table-responsive{overflow:visible}
+  .air-recycle-card .table,.air-recycle-card .table :is(thead,tbody){display:block;width:100%}
+  .air-recycle-card .table thead tr{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;height:auto!important}
+  .air-recycle-card .table thead th{min-width:0!important;width:auto!important;padding:10px 0!important}
+  .air-recycle-card .table thead th:nth-child(n+3){display:none}
+  .air-recycle-card .table tbody>tr[data-id]{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,1fr);gap:10px;height:auto!important;padding:16px 0;border-bottom:1px dashed var(--nas-line)}
+  .air-recycle-card .table tbody>tr[data-id]:last-child{border-bottom:0}
+  .air-recycle-card .table tbody>tr[data-id]>td{display:block;min-width:0!important;width:auto!important;max-width:none;white-space:normal;padding:0!important;margin:0!important;border:0!important;text-align:left}
+  .air-recycle-card .air-recycle-select-cell{grid-column:1;grid-row:1}
+  .air-recycle-card .air-recycle-name-cell{grid-column:2/-1;grid-row:1}
+  .air-recycle-card .air-recycle-name{align-items:flex-start}
+  .air-recycle-card .air-recycle-name>span{font-size:15px;line-height:1.5}
+  .air-recycle-card .air-recycle-path-cell{grid-column:2/-1;grid-row:2;font-size:12px;overflow-wrap:anywhere}
+  .air-recycle-card .air-recycle-size-cell{grid-column:2/-1;grid-row:3;font-size:12px}
+  .air-recycle-card .air-recycle-date-cell:nth-child(5){grid-column:2/-1;grid-row:4;font-size:12px;overflow-wrap:anywhere}
+  .air-recycle-card .air-recycle-path-cell::before{content:'原位置';display:block;color:var(--nas-muted);margin-bottom:2px}
+  .air-recycle-card .air-recycle-size-cell::before{content:'大小';display:inline-block;color:var(--nas-muted);margin-right:8px}
+  .air-recycle-card .air-recycle-date-cell::before{display:block;color:var(--nas-muted);margin-bottom:2px}
+  .air-recycle-card .air-recycle-date-cell:nth-child(5)::before{content:'删除时间'}
+  :lang(en) .air-recycle-card .air-recycle-path-cell::before{content:'Original location'}
+  :lang(en) .air-recycle-card .air-recycle-size-cell::before{content:'Size'}
+  :lang(en) .air-recycle-card .air-recycle-date-cell:nth-child(5)::before{content:'Deleted'}
+  .air-recycle-card .form-check{margin:0!important;min-height:32px}
+  .air-recycle-card .form-check-input{width:22px;height:22px;margin:0!important}
+  .air-recycle-card .air-recycle-tools{flex-wrap:wrap;gap:8px}
+  .air-recycle-card #air-recycle-refresh{width:44px!important;height:44px!important;min-height:44px!important}
+  .air-recycle-card :is(#air-recycle-empty,.air-recycle-selection>.btn){height:44px!important;min-height:44px!important}
+  .air-recycle-card .air-recycle-status-row{min-height:0;margin:12px 0}
+  .air-recycle-card .air-recycle-selection{gap:8px}
+  .air-recycle-card .air-recycle-selection>span{flex-basis:100%;margin:0}
+  .air-recycle-card>.card-header{background:var(--nas-surface)!important}
+  :is(.nas-files-card,.air-shares-card) .dt-toolbar{flex-wrap:wrap;gap:8px;justify-content:space-between!important}
+  :is(.nas-files-card,.air-shares-card) label:has(select[aria-controls]){display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  :is(.nas-files-card,.air-shares-card) label .select2-container{width:84px!important}
+  :is(.nas-files-card,.air-shares-card) .dt-info{margin:0!important;overflow-wrap:anywhere}
+  .air-search-results{padding:8px 16px 16px}
+  .air-search-row{flex-wrap:wrap}
+  .air-search-copy{flex:1 1 160px}
+  .air-search-location{overflow-wrap:anywhere}
+  .modal-dialog:not(.modal-fullscreen){width:calc(100% - 24px);max-width:none;margin:12px}
+  .modal-dialog:not(.modal-fullscreen) .modal-content{max-height:calc(100dvh - 24px)}
+  .modal-body{overflow-y:auto;min-width:0;min-height:0;overflow-wrap:anywhere}
+  .modal :is(.modal-header,.modal-body,.modal-footer){padding:16px!important}
+  .modal-footer{flex-wrap:wrap;gap:8px}
+  .modal-footer>.btn{min-height:44px!important;margin:0!important}
+  #dirs_browser_nav{min-width:0;overflow-wrap:anywhere}
+  #dirsbrowser_list{table-layout:fixed;width:100%!important}
+  #dirsbrowser_list :is(th,td){min-width:0!important;white-space:normal;overflow-wrap:anywhere}
+  #dirsbrowser_list a{min-width:0;overflow-wrap:anywhere}
+  .nas-share-fields{grid-template-columns:minmax(0,1fr)}
+  .nas-share-file{min-width:0;align-items:flex-start}
+  .nas-share-file>div{min-width:0}
+  .nas-personal-card :is(input,textarea,.nas-info-field){min-width:0;max-width:100%}
+  .air-task-center{right:12px;bottom:max(12px,env(safe-area-inset-bottom));width:calc(100vw - 24px);max-width:none;max-height:calc(100dvh - 24px)}
+  .air-task-center>header{flex-wrap:wrap;gap:8px}
+  .air-task-center #air-task-rows{max-height:min(340px,50dvh)}
+  .air-task-center footer{flex-wrap:wrap;gap:6px}
+}
+
+.air-recycle-retention{font-size:13px;color:var(--nas-muted)}
+
+/* Recycled directories expand in place; only the deleted root remains selectable. */
+.air-recycle-card .air-recycle-name{gap:8px;min-width:0}
+.air-recycle-card .air-recycle-name>span:last-child{min-width:0;overflow-wrap:anywhere}
+.air-recycle-toggle,.air-recycle-toggle-spacer{display:inline-flex;align-items:center;justify-content:center;width:28px;min-width:28px;height:28px;flex:0 0 28px}
+.air-recycle-toggle{padding:4px;border:0;border-radius:6px;background:transparent;color:var(--nas-muted);cursor:pointer}
+.air-recycle-toggle:hover,.air-recycle-toggle:focus-visible{background:var(--nas-line);color:var(--nas-accent)}
+.air-recycle-toggle:focus-visible{outline:2px solid var(--nas-accent);outline-offset:1px}
+.air-recycle-toggle svg{width:14px;height:14px;transition:transform .15s}
+.air-recycle-toggle[aria-expanded=true] svg{transform:rotate(90deg)}
+.air-recycle-tree{list-style:none;margin:6px 0 0 13px;padding:0 0 0 14px;border-left:1px solid var(--nas-line);min-width:0}
+.air-recycle-tree[hidden]{display:none!important}
+.air-recycle-tree>li{margin:0;padding:0;min-width:0}
+.air-recycle-tree-line{display:flex;align-items:flex-start;gap:7px;padding:6px 0;min-width:0}
+.air-recycle-child-name{min-width:0;flex:1;overflow-wrap:anywhere;line-height:1.6}
+.air-recycle-child-size{flex-shrink:0;white-space:nowrap;font-size:11px;color:var(--nas-muted);line-height:1.8}
+.air-recycle-tree-message{color:var(--nas-muted);font-size:12px;padding:8px 0!important;overflow-wrap:anywhere}
+.air-recycle-tree-more{border:0;background:transparent;color:var(--nas-accent);padding:7px 4px;cursor:pointer;font-size:12px}
+.air-recycle-card tr:has(.air-recycle-tree:not([hidden]))>td{vertical-align:top}
+@media(max-width:700px){
+ .air-recycle-card .air-recycle-name{align-items:center}
+ .air-recycle-tree{margin-left:9px;padding-left:8px}
+ .air-recycle-toggle,.air-recycle-toggle-spacer{width:36px;min-width:36px;height:44px;flex-basis:36px}
+ .air-recycle-tree-line{align-items:center;gap:5px;padding:3px 0}
+ .air-recycle-tree-line>i{font-size:20px!important;flex-shrink:0}
+ .air-recycle-child-name{font-size:13px}
+ .air-recycle-tree-more{min-height:44px}
+ .air-recycle-tree .air-recycle-tree .air-recycle-tree{margin-left:3px;padding-left:4px}
+}
+
+@media(max-width:700px){
+ .air-recycle-tree{margin-left:4px;padding-left:7px}
+ .air-recycle-tree .air-recycle-toggle-spacer{width:8px;min-width:8px;flex-basis:8px}
+}
