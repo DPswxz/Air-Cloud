@@ -851,7 +851,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-        <script src="{{.StaticURL}}/air-i18n.js?v=20261018-language-en19"></script>
+        <script src="{{.StaticURL}}/air-i18n.js?v=20261019-drop-language1"></script>
         <link rel="stylesheet" href="{{.StaticURL}}/air-i18n.css?v=20261017-language-menu1">
         <title></title>
         <meta charset="utf-8" />
@@ -871,7 +871,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         {{- end}}
         {{- template "commonjs" .CSPNonce }}
         <link href="{{.StaticURL}}/air-admin.css?v=20261016-admin-theme2" rel="stylesheet" type="text/css">
-        <link href="{{.StaticURL}}/nas-ui.css?v=20261018-recycle-tree1" rel="stylesheet" type="text/css">
+        <link href="{{.StaticURL}}/nas-ui.css?v=20261019-file-drop1" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="/static/air-accounts.css?v=20261018-session15"><script defer src="/static/air-accounts.js?v=20261018-session15"></script>
 <script src="/static/air-auth-theme.js?v=20261018-share-spacing18"></script>
 </head>
@@ -1052,7 +1052,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                 }
 
                 return {
-                    fire: function (params) {
+                    fire: function (params = {}) {
+                        params = {...params, customClass: {confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light', ...params.customClass}, confirmButtonText: params.confirmButtonText || $.t('general.ok'), cancelButtonText: params.cancelButtonText || (params.showCancelButton ? $.t('general.cancel') : null)};
                         modal = new bootstrap.Modal('#modal_alert');
                         let modalEl = $('#modal_alert');
                         let okBtn = $("#modal_alert_ok");

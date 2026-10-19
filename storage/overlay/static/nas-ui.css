@@ -478,3 +478,5 @@ img[src*="/nas-avatars/"]{color-scheme:light}
 }
 
 .air-share-navigation-error{margin:12px 0;color:var(--nas-danger,#d44);font-size:13px}.air-share-navigation-error[hidden]{display:none}#file_manager_list_container[aria-busy=true] tbody{opacity:.65}
+
+.nas-files-card>.card-body{position:relative}.air-file-drop-active::after{content:attr(data-drop-label);position:absolute;inset:4px;z-index:30;display:flex;align-items:center;justify-content:center;padding:24px;border:2px dashed var(--nas-accent,#3478f6);border-radius:12px;background:color-mix(in srgb,var(--nas-surface,#fff) 90%,transparent);color:var(--nas-accent,#3478f6);font-size:18px;font-weight:600;pointer-events:none}

@@ -213,13 +213,14 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.isDataTable('#file_manager_list'))return;const table=jQuery('#file_manager_list').DataTable();if(!table.rows({selected:true}).count())table.ajax.reload(null,false);},10000);
 </script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-navigation.js?v=20261016-en2"></script>
+<script src="{{.StaticURL}}/air-file-drop.js?v=20261019-drop1"></script>
 <script src="{{.StaticURL}}/air-file-actions.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>window.AirRecycleConfig={csrf:'{{.CSRFToken}}'};</script>
 <script src="{{.StaticURL}}/air-recycle.js?v=20261018-recycle-copy2"></script>
 <script src="{{.StaticURL}}/air-settings.js?v=20261016-en2"></script>
 <script src="{{.StaticURL}}/air-capacity.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261018-i18n-audit1"></script>
-{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261018-i18n-audit1"></script>{{end}}
+{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261019-progress2"></script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>AirTransfers.configure({share:{{if .ShareOwner}}true{{else}}false{{end}},manifestURL:'{{if .ShareOwner}}{{.DownloadURL}}{{end}}'.replace(/partial$/,'manifest'),enabled:{{if .FileURL}}true{{else}}false{{end}},owner:{{if .ShareOwner}}'share:{{.DownloadURL}}'{{else}}'{{.LoggedUser.Username}}'{{end}},csrf:'{{.CSRFToken}}',progressURL:'{{.ProfileURL}}'.replace(/\/profile$/,'/download-progress'),pingURL:'{{.PingURL}}'});</script>
 
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.js"></script>
@@ -1981,6 +1982,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
 
     {const back=document.getElementById('air-parent-directory'),current=new URL(location.href).searchParams.get('path')||'/',parts=current.split('/').filter(Boolean);if(parts.length){parts.pop();const target=new URL('{{.FilesURL}}',location.origin);target.searchParams.set('path','/'+parts.join('/'));back.href=target.href;}else{back.setAttribute('aria-disabled','true');back.tabIndex=-1;}}
     document.getElementById("air-refresh-files").onclick=()=>{window.AirNavigation.cache.clear();$("#file_manager_list").DataTable().ajax.reload(null,false);};
+    {{if .CanAddFiles}}AirFileDrop.install(document.querySelector('.nas-files-card > .card-body'),{upload:uploadFiles,getDirectory:airCurrentDir,translate:value=>window.AirI18n.t(value),onError:error=>ModalAlert.fire({text:error.message,icon:'error'})});{{end}}
     var playerKeepAlive;
 
     function uploadFiles(files) {

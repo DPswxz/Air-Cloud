@@ -1429,5 +1429,7 @@
   "账号登录": "Account sign-in",
   "会话已过期，请重新输入密码登录。": "Your session has expired. Enter your password to sign in again.",
   "访问网络发生变化，请重新输入密码验证此账号。": "Your network has changed. Enter your password to verify this account.",
-  "登录状态已失效，请重新输入密码。": "Your saved session is no longer valid. Enter your password to sign in again."
+  "登录状态已失效，请重新输入密码。": "Your saved session is no longer valid. Enter your password to sign in again.",
+  "松开即可上传到当前文件夹": "Drop to upload to the current folder",
+  "目录已变化，请重新拖入文件。": "The folder has changed. Drag the files here again."
 }
