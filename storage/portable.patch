@@ -23,10 +23,29 @@ index aa86810..e766e50 100644
 + })
 +}
 diff --git a/internal/dataprovider/dataprovider.go b/internal/dataprovider/dataprovider.go
-index 677e225..ffd172d 100644
+index 677e225..b0d67c6 100644
 --- a/internal/dataprovider/dataprovider.go
 +++ b/internal/dataprovider/dataprovider.go
-@@ -5004,3 +5004,11 @@ func getCmdOutput(cmd *exec.Cmd, sender string) ([]byte, error) {
+@@ -2136,14 +2136,16 @@ func UserExists(username, role string) (User, error) {
+ // username.
+ func GetAdminSignature(username string) (string, error) {
+ 	username = config.convertName(username)
+-	return provider.getAdminSignature(username)
++	account, err := provider.adminExists(username)
++ if err != nil { return "", err }; if account.Status != 1 { return "", fmt.Errorf("account disabled") }; return account.GetSignature(), nil
+ }
+ 
+ // GetUserSignature returns the signature for the user with the specified
+ // username.
+ func GetUserSignature(username string) (string, error) {
+ 	username = config.convertName(username)
+-	return provider.getUserSignature(username)
++	account, err := provider.userExists(username, "")
++ if err != nil { return "", err }; if account.Status != 1 { return "", fmt.Errorf("account disabled") }; return account.GetSignature(), nil
+ }
+ 
+ // GetUserWithGroupSettings tries to return the user with the specified username
+@@ -5004,3 +5006,11 @@ func getCmdOutput(cmd *exec.Cmd, sender string) ([]byte, error) {
  func providerLog(level logger.LogLevel, format string, v ...any) {
  	logger.Log(level, logSender, "", format, v...)
  }
@@ -39,13 +58,30 @@ index 677e225..ffd172d 100644
 + return err
 +}
 diff --git a/internal/dataprovider/user.go b/internal/dataprovider/user.go
-index 8f0815b..d0b50f1 100644
+index 8f0815b..ffcdd3e 100644
 --- a/internal/dataprovider/user.go
 +++ b/internal/dataprovider/user.go
-@@ -1330,9 +1330,21 @@ func (u *User) MustSetSecondFactorForProtocol(protocol string) bool {
+@@ -15,6 +15,7 @@
+ package dataprovider
+ 
+ import (
++ "crypto/sha256"
+ 	"encoding/json"
+ 	"errors"
+ 	"fmt"
+@@ -24,7 +25,6 @@ import (
+ 	"path"
+ 	"path/filepath"
+ 	"slices"
+-	"strconv"
+ 	"strings"
+ 	"sync"
+ 	"time"
+@@ -1330,7 +1330,19 @@ func (u *User) MustSetSecondFactorForProtocol(protocol string) bool {
  // GetSignature returns a signature for this user.
  // It will change after an update
  func (u *User) GetSignature() string {
+-	return strconv.FormatInt(u.UpdatedAt, 10)
 +	if u.IsNASAdminFileView() {
 +		admin, err := AdminExists(strings.TrimPrefix(u.Description, "nas-admin-view:"))
 +		if err != nil || admin.Status != 1 || admin.Role != "" || !admin.HasPermission(PermAdminAny) {
@@ -53,17 +89,15 @@ index 8f0815b..d0b50f1 100644
 +		}
 +		return admin.GetSignature() + ":nas-all-files"
 +	}
- 	return strconv.FormatInt(u.UpdatedAt, 10)
- }
- 
++	return fmt.Sprintf("%x", sha256.Sum256([]byte(u.Username + "\x00" + u.Password + "\x00" + u.Email)))
++}
++
 +// IsNASAdminFileView identifies an internal administrator file browser session.
 +func (u *User) IsNASAdminFileView() bool {
 +	return strings.HasPrefix(u.Username, "__nas_admin_view_") && strings.HasPrefix(u.Description, "nas-admin-view:")
-+}
-+
+ }
+ 
  // GetBandwidthForIP returns the upload and download bandwidth for the specified IP
- func (u *User) GetBandwidthForIP(clientIP, connectionID string) (int64, int64) {
- 	if len(u.Filters.BandwidthLimits) > 0 {
 diff --git a/internal/httpd/api_http_user.go b/internal/httpd/api_http_user.go
 index ae54594..3686cce 100644
 --- a/internal/httpd/api_http_user.go
@@ -705,3 +739,50 @@ index eac05a8..da6f4d0 100644
  	if err != nil {
  		sendAPIResponse(w, r, err, "", getRespStatus(err))
  		return
+diff --git a/internal/dataprovider/admin.go b/internal/dataprovider/admin.go
+index e452242..060d1d9 100644
+--- a/internal/dataprovider/admin.go
++++ b/internal/dataprovider/admin.go
+@@ -15,18 +15,18 @@
+ package dataprovider
+ 
+ import (
++ "crypto/sha256"
+ 	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"net"
+ 	"os"
+ 	"slices"
+-	"strconv"
+ 	"strings"
++	"unicode/utf8"
+ 
+ 	"github.com/alexedwards/argon2id"
+ 	"github.com/sftpgo/sdk"
+-	passwordvalidator "github.com/wagslane/go-password-validator"
+ 	"golang.org/x/crypto/bcrypt"
+ 
+ 	"github.com/drakkan/sftpgo/v2/internal/kms"
+@@ -273,10 +273,8 @@ func (a *Admin) CountUnusedRecoveryCodes() int {
+ 
+ func (a *Admin) hashPassword() error {
+ 	if a.Password != "" && !util.IsStringPrefixInSlice(a.Password, internalHashPwdPrefixes) {
+-		if config.PasswordValidation.Admins.MinEntropy > 0 {
+-			if err := passwordvalidator.Validate(a.Password, config.PasswordValidation.Admins.MinEntropy); err != nil {
+-				return util.NewI18nError(util.NewValidationError(err.Error()), util.I18nErrorPasswordComplexity)
+-			}
++		if utf8.RuneCountInString(a.Password) < 3 {
++			return util.NewI18nError(util.NewValidationError("密码至少需要 3 个字符"), util.I18nErrorPasswordComplexity)
+ 		}
+ 		if config.PasswordHashing.Algo == HashingAlgoBcrypt {
+ 			pwd, err := bcrypt.GenerateFromPassword([]byte(a.Password), config.PasswordHashing.BcryptOptions.Cost)
+@@ -588,7 +586,7 @@ func (a *Admin) CanManageMFA() bool {
+ // GetSignature returns a signature for this admin.
+ // It will change after an update
+ func (a *Admin) GetSignature() string {
+-	return strconv.FormatInt(a.UpdatedAt, 10)
++	return fmt.Sprintf("%x", sha256.Sum256([]byte(a.Username + "\x00" + a.Password + "\x00" + a.Email)))
+ }
+ 
+ func (a *Admin) getACopy() Admin {

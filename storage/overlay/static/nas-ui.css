@@ -476,3 +476,5 @@ img[src*="/nas-avatars/"]{color-scheme:light}
  .air-recycle-tree{margin-left:4px;padding-left:7px}
  .air-recycle-tree .air-recycle-toggle-spacer{width:8px;min-width:8px;flex-basis:8px}
 }
+
+.air-share-navigation-error{margin:12px 0;color:var(--nas-danger,#d44);font-size:13px}.air-share-navigation-error[hidden]{display:none}#file_manager_list_container[aria-busy=true] tbody{opacity:.65}

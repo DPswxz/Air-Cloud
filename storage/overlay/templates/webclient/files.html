@@ -207,6 +207,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{- end}}
 
 {{- define "extra_js"}}
+<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>let airCurrentDirectory='{{.CurrentDir}}';function airCurrentDir(){return airCurrentDirectory;}{{if .ShareOwner}}window.AirShareNavigationConfig={dirs:'{{.DirsURL}}',files:'{{.FilesURL}}',setPath(path){airCurrentDirectory=encodeURIComponent(path)}};{{end}}</script>
+{{if .ShareOwner}}<script defer src="{{.StaticURL}}/air-share-navigation.js?v=20261018-share-nav1"></script>{{end}}
 {{if not .FileURL}}<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
 setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.isDataTable('#file_manager_list'))return;const table=jQuery('#file_manager_list').DataTable();if(!table.rows({selected:true}).count())table.ajax.reload(null,false);},10000);
 </script>{{end}}
@@ -573,7 +575,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         var initDatatable = function () {
             dt = $("#file_manager_list").DataTable({
                 ajax: {
-                    url: "{{.DirsURL}}?path={{.CurrentDir}}",
+                    url: "{{.DirsURL}}?path="+airCurrentDir(),
                     dataSrc: "",
                     error: function ($xhr, textStatus, errorThrown) {
                         if(textStatus === "abort") return;
@@ -606,10 +608,10 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 stateSave: true,
                 stateDuration: 0,
                 stateSaveParams: function (settings, data) {
-                    data.sftpgo_dir = '{{.CurrentDir}}';
+                    data.sftpgo_dir = airCurrentDir();
                 },
                 stateLoadParams: function (settings, data) {
-                    if (!data.sftpgo_dir || data.sftpgo_dir != '{{.CurrentDir}}'){
+                    if (!data.sftpgo_dir || data.sftpgo_dir != airCurrentDir()){
                         data.start = 0;
                         data.search.search = "";
                     }
@@ -1050,7 +1052,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                     $('#move_copy_source').val("");
                     $('#modal_move_or_copy .modal-title').removeAttr('data-i18n').text(window.AirI18n.t("移动到"));
         $('#modal_move_or_copy').modal('show');
-                    KTDatatablesFoldersExplorer.init('{{.DirsURL}}?dirtree=1&path={{.CurrentDir}}', '{{.CurrentDir}}');
+                    KTDatatablesFoldersExplorer.init('{{.DirsURL}}?dirtree=1&path='+airCurrentDir(), airCurrentDir());
                 });
             }
 
@@ -1144,7 +1146,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                                 } else {
                                     path = '{{.FilesURL}}';
                                 }
-                                path+='?path={{.CurrentDir}}'+encodeURIComponent("/"+itemName);
+                                path+='?path='+airCurrentDir()+encodeURIComponent("/"+itemName);
 
                                 if (selectedRowsIdx.length > 1){
                                     let info = $.t('fs.deleting', {
@@ -1245,7 +1247,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         }
     }();
 
-    function airDownloadSelection(rows){if(!rows.length)return;if(rows.length===1&&getTypeFromMeta(rows[0].meta)==='2'){AirTransfers.downloadFile(rows[0].url,getNameFromMeta(rows[0].meta),rows[0].size);return}AirTransfers.downloadBatch('{{.DownloadURL}}?path={{.CurrentDir}}',rows.map(row=>getNameFromMeta(row.meta)),'{{.CSRFToken}}');}
+    function airDownloadSelection(rows){if(!rows.length)return;if(rows.length===1&&getTypeFromMeta(rows[0].meta)==='2'){AirTransfers.downloadFile(rows[0].url,getNameFromMeta(rows[0].meta),rows[0].size);return}AirTransfers.downloadBatch('{{.DownloadURL}}?path='+airCurrentDir(),rows.map(row=>getNameFromMeta(row.meta)),'{{.CSRFToken}}');}
     function getNameFromMeta(meta) {
         return meta.split('_').slice(1).join('_');
     }
@@ -1266,7 +1268,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         $('#move_copy_name').val(getNameFromMeta(meta));
         $('#modal_move_or_copy .modal-title').removeAttr('data-i18n').text(window.AirI18n.t("移动到"));
         $('#modal_move_or_copy').modal('show');
-        KTDatatablesFoldersExplorer.init('{{.DirsURL}}?dirtree=1&path={{.CurrentDir}}', '{{.CurrentDir}}');
+        KTDatatablesFoldersExplorer.init('{{.DirsURL}}?dirtree=1&path='+airCurrentDir(), airCurrentDir());
     }
 
     function getMoveOrCopyItems() {
@@ -1276,7 +1278,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
             targetDir = targetDir.endsWith('/') ? targetDir.slice(0, -1) : targetDir;
         }
         if (targetDir.trim() == ""){
-            targetDir = "{{.CurrentDir}}";
+            targetDir = airCurrentDir();
         } else {
             targetDir = encodeURIComponent(targetDir);
         }
@@ -1370,7 +1372,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 return;
             }
             let item = items[index];
-            let sourcePath = decodeURIComponent('{{.CurrentDir}}');
+            let sourcePath = decodeURIComponent(airCurrentDir());
             if (!sourcePath.endsWith('/')){
                 sourcePath+="/";
             }
@@ -1390,7 +1392,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 setLoadingText(info,`${sourcePath} => ${targetPath}`);
             }
             let path = '{{.FileActionsURL}}/copy';
-            path+='?path={{.CurrentDir}}'+encodeURIComponent("/"+item.sourceName)+'&target='+item.targetDir+encodeURIComponent("/"+item.targetName);
+            path+='?path='+airCurrentDir()+encodeURIComponent("/"+item.sourceName)+'&target='+item.targetDir+encodeURIComponent("/"+item.targetName);
 
             axios.post(path, null, {
                 timeout: 15000,
@@ -1523,7 +1525,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 return;
             }
             let item = items[index];
-            let sourcePath = decodeURIComponent('{{.CurrentDir}}');
+            let sourcePath = decodeURIComponent(airCurrentDir());
             if (!sourcePath.endsWith('/')){
                 sourcePath+="/";
             }
@@ -1543,7 +1545,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 setLoadingText(info,`${sourcePath} => ${targetPath}`);
             }
             let path = '{{.FileActionsURL}}/move';
-            path+='?path={{.CurrentDir}}'+encodeURIComponent("/"+item.sourceName)+'&target='+item.targetDir+encodeURIComponent("/"+item.targetName);
+            path+='?path='+airCurrentDir()+encodeURIComponent("/"+item.sourceName)+'&target='+item.targetDir+encodeURIComponent("/"+item.targetName);
 
             axios.post(path, null, {
                 timeout: 15000,
@@ -1668,7 +1670,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 } else {
                     path = '{{.FilesURL}}';
                 }
-                path+='?path={{.CurrentDir}}'+encodeURIComponent("/"+itemName);
+                path+='?path='+airCurrentDir()+encodeURIComponent("/"+itemName);
 
                 axios.delete(path, {
                     timeout: 15000,
@@ -1715,7 +1717,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
             const response=await fetch('{{.SharesURL}}/json',{cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}});
             if(!response.ok)throw Error('share check failed');
             const shares=await response.json();
-            const base=decodeURIComponent('{{.CurrentDir}}'.replace(/\+/g,' '));
+            const base=decodeURIComponent(airCurrentDir().replace(/\+/g,' '));
             const clean=value=>{const parts=[];for(const p of value.split('/')){if(p==='..')parts.pop();else if(p&&p!=='.')parts.push(p)}return '/'+parts.join('/')};
             const paths=new Set(filesArray.map(name=>clean(base+'/'+name)));
             const existing=shares.filter(share=>(share.paths||[]).some(p=>paths.has(clean(p))));
@@ -1732,7 +1734,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 }
                 ModalAlert.fire({content,icon:'warning',confirmButtonText:window.AirI18n.t("知道了"),customClass:{confirmButton:'btn btn-light-primary'}});return;
             }
-            const target='{{.ShareURL}}?path={{.CurrentDir}}&files='+encodeURIComponent(JSON.stringify(filesArray))+'&_='+Date.now();
+            const target='{{.ShareURL}}?path='+airCurrentDir()+'&files='+encodeURIComponent(JSON.stringify(filesArray))+'&_='+Date.now();
             if(!window.open(target,'_blank'))window.location.assign(target);
         } catch(error) {
             ModalAlert.fire({text:window.AirI18n.t("暂时无法检查分享，请稍后重试"),icon:'warning',confirmButtonText:window.AirI18n.t("知道了"),customClass:{confirmButton:'btn btn-light-primary'}});
@@ -1823,7 +1825,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
 
         function executeRename() {
             let path = '{{.FileActionsURL}}/move';
-            path += '?path={{.CurrentDir}}' + encodeURIComponent("/" + oldName) + '&target={{.CurrentDir}}' + encodeURIComponent("/" + newName);
+            path += '?path='+airCurrentDir() + encodeURIComponent("/" + oldName) + '&target='+airCurrentDir() + encodeURIComponent("/" + newName);
             axios.post(path, null, {
                 timeout: 15000,
                 headers: {
@@ -1855,7 +1857,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         CheckExist.fire({
             operation: "move",
             files: [newName],
-            path: '{{.CurrentDir}}'
+            path: airCurrentDir()
         }).then((result)=>{
             if (result.error) {
                 KTApp.hidePageLoading();
@@ -1935,7 +1937,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
             return;
         }
 
-        let path = '{{.DirsURL}}?path={{.CurrentDir}}' + encodeURIComponent("/"+dirName);
+        let path = '{{.DirsURL}}?path='+airCurrentDir() + encodeURIComponent("/"+dirName);
         submitButton.setAttribute('data-kt-indicator', 'on');
         submitButton.disabled = true;
         cancelButton.disabled = true;
@@ -1985,11 +1987,11 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         if(window.parent!==window&&window.parent.AirCloudTransfers){
             if(!files.length)return;
             const selected=[],dirs=[];for(const f of files){const name=f.fullPath?f.fullPath.split('/')[0]:f.name;if(!selected.includes(name))selected.push(name);if(f.fullPath&&!dirs.includes(name))dirs.push(name);}
-            CheckExist.fire({operation:'upload',files:selected,path:'{{.CurrentDir}}'}).then(async result=>{
+            CheckExist.fire({operation:'upload',files:selected,path:airCurrentDir()}).then(async result=>{
                 if(result.error){ModalAlert.fire({text:window.AirI18n.t("无法检查目标文件，请重新登录或稍后重试。"),icon:'error'});return;}
                 const collisions=[];for(const entry of Object.values(result.data)){if(entry.type==='1'&&!dirs.includes(entry.name)){ModalAlert.fire({text:window.AirI18n.t("目标位置存在同名文件夹，无法覆盖。"),icon:'error'});return;}collisions.push(entry.name);}
                 if(collisions.length){const confirmed=await ModalAlert.fire({text:window.AirI18n.t("存在同名项目：")+collisions.join('、')+window.AirI18n.t("。是否合并文件夹并覆盖同名文件？"),icon:'warning',showCancelButton:true,confirmButtonText:window.AirI18n.t("继续上传"),cancelButtonText:window.AirI18n.t("取消")});if(!confirmed.isConfirmed)return;}
-                window.parent.AirCloudTransfers.enqueueUploads({owner:'{{.LoggedUser.Username}}',files:Array.from(files),uploadBase:'{{.FileURL}}?path={{.CurrentDir}}',csrf:'{{.CSRFToken}}'});
+                window.parent.AirCloudTransfers.enqueueUploads({owner:'{{.LoggedUser.Username}}',files:Array.from(files),uploadBase:'{{.FileURL}}?path='+airCurrentDir(),csrf:'{{.CSRFToken}}'});
                 try{Dropzone.forElement('#upload_files').removeAllFiles();Dropzone.forElement('#upload_files_empty').removeAllFiles();}catch{}
             });
             return;
@@ -2044,9 +2046,9 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 }
             }
             //{{- if .ShareUploadBaseURL}}
-            uploadPath = '{{.ShareUploadBaseURL}}' + encodeURIComponent("/" + name)+"?mkdir_parents="+mkdirParents;
+            uploadPath = (window.AirShareNavigation?.uploadBase()||'{{.ShareUploadBaseURL}}') + encodeURIComponent("/" + name)+"?mkdir_parents="+mkdirParents;
             //{{- else}}
-            uploadPath = '{{.FileURL}}?path={{.CurrentDir}}' + encodeURIComponent("/" + name)+"&mkdir_parents="+mkdirParents;
+            uploadPath = '{{.FileURL}}?path='+airCurrentDir() + encodeURIComponent("/" + name)+"&mkdir_parents="+mkdirParents;
             //{{- end}}
             let lastModified;
             try {
@@ -2134,7 +2136,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         CheckExist.fire({
             operation: "upload",
             files: filesArray,
-            path: "{{.CurrentDir}}"
+            path: airCurrentDir()
         }).then((result)=> {
             if (result.error) {
                 has_errors = true;
@@ -2260,7 +2262,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         }
 
         var dropzone =  new Dropzone("#upload_files", {
-            url: "{{.FilesURL}}?path={{.CurrentDir}}",
+            url: "{{.FilesURL}}?path="+airCurrentDir(),
             paramName: "filenames",
             createImageThumbnails: false,
             maxFiles: null,
@@ -2302,7 +2304,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         });
 
         var dropzoneEmpty =  new Dropzone("#upload_files_empty", {
-            url: "{{.FilesURL}}?path={{.CurrentDir}}",
+            url: "{{.FilesURL}}?path="+airCurrentDir(),
             paramName: "filenames",
             createImageThumbnails: false,
             maxFiles: null,

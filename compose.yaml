@@ -28,6 +28,7 @@ services:
       SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__FAVICON_PATH: /air-cloud.svg
       SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__LOGO_PATH: /air-cloud.svg
       SFTPGO_HTTPD__COOKIE_LIFETIME: "43200"
+      SFTPGO_HTTPD__TOKEN_VALIDATION: "3"
       SFTPGO_COMMON__UPLOAD_MODE: "1"
     volumes:
       - settings:/var/lib/sftpgo

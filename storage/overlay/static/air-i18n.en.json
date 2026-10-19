@@ -871,7 +871,7 @@
   "逗号分隔的收件人。支持占位符": "Comma separated recipients. Placeholders are supported",
   "密件抄送": "Bcc",
   "逗号分隔的密件抄送地址。支持占位符": "Comma separated Bcc addresses. Placeholders are supported",
-  "主题": "Subject",
+  "主题": "Theme",
   "内容类型": "Content Type",
   "附件": "Attachments",
   "以逗号分隔的路径列表，支持占位符。总大小限制为 10 MB。": "Comma separated paths to attach. Placeholders are supported. The total size is limited to 10 MB",
@@ -1426,5 +1426,8 @@
   "收起账号列表": "Collapse account list",
   "退出所有账号": "Sign out of all accounts",
   "已保存账号信息": "Saved accounts",
-  "账号登录": "Account sign-in"
+  "账号登录": "Account sign-in",
+  "会话已过期，请重新输入密码登录。": "Your session has expired. Enter your password to sign in again.",
+  "访问网络发生变化，请重新输入密码验证此账号。": "Your network has changed. Enter your password to verify this account.",
+  "登录状态已失效，请重新输入密码。": "Your saved session is no longer valid. Enter your password to sign in again."
 }
