@@ -760,7 +760,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{- end}}
 
 {{- define "theme-switcher"}}
-<div class="d-flex align-items-center ms-2 ms-lg-3">
+<div class="d-flex align-items-center ms-2 ms-lg-3 air-theme-slot">
     <a href="#" class="btn btn-icon btn-active-light-primary w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default:'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
         <i class="ki-duotone ki-night-day theme-light-show fs-2">
             <span class="path1"></span>
@@ -851,7 +851,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-        <script src="{{.StaticURL}}/air-i18n.js?v=20261019-drop-language1"></script>
+        <script src="{{.StaticURL}}/air-i18n.js?v=20261019-header3"></script>
         <link rel="stylesheet" href="{{.StaticURL}}/air-i18n.css?v=20261017-language-menu1">
         <title></title>
         <meta charset="utf-8" />
@@ -873,7 +873,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         <link href="{{.StaticURL}}/air-admin.css?v=20261016-admin-theme2" rel="stylesheet" type="text/css">
         <link href="{{.StaticURL}}/nas-ui.css?v=20261019-file-drop1" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="/static/air-accounts.css?v=20261018-session15"><script defer src="/static/air-accounts.js?v=20261018-session15"></script>
-<script src="/static/air-auth-theme.js?v=20261018-share-spacing18"></script>
+<script src="/static/air-auth-theme.js?v=20261019-header3"></script>
 </head>
 
     <body data-air-owner="{{.LoggedUser.Username}}" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-toolbar-enabled="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true"  class="app-default">
@@ -957,7 +957,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                         <div id="kt_app_footer" class="app-footer">
                             <div class="app-container  container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3 align-items-center justify-content-center">
                                 <div class="text-gray-900 order-2 order-md-1">
-                                    <span class="text-gray-700 fw-semibold me-1" title="{{.Version}}">Air Cloud · Powered by SFTPGo</span><a href="{{.StaticURL}}/nas-source.zip" class="ms-3"><span data-air-i18n>开源代码（AGPLv3）</span></a>
+                                    <a href="https://github.com/DPswxz/Air-Cloud" target="_blank" rel="noopener noreferrer">Air Cloud</a><span class="text-gray-700 mx-1"> · Powered by </span><a href="https://github.com/drakkan/sftpgo" target="_blank" rel="noopener noreferrer">SFTPGo</a>
                                 </div>
                             </div>
                         </div>

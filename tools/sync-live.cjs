@@ -51,11 +51,14 @@ function portableAsset(rel,data){
  if(!/\.(js|html|css|json|svg)$/.test(rel))return data;
  return data.toString('utf8').replace(/\r\n/g,'\n')
  .replace("window.location.hostname === '127.0.0.1' ? getCurrentURI() : 'https://dpstools02.duckdns.org'",'getCurrentURI()')
+ .replace("window.location.hostname === '127.0.0.1' ? getCurrentURI() : 'https://dpswxz.com'",'getCurrentURI()')
  .replaceAll('请打开 https://dpstools02.duckdns.org/?local=1 后重试。','请通过自己的 HTTPS 域名或本机 localhost 地址访问后重试。')
  .split('\n').map(line=>line.replace(/^[\t ]+/,indent=>indent.replaceAll('\t','    ')).trimEnd()).join('\n').trimEnd()+'\n';
 }
 const overlay=path.join(storage,'overlay');
 const assets=new Set(walk(overlay).map(p=>path.relative(overlay,p)));
+assets.add(path.join('static','air-text-codec.js'));
+assets.add(path.join('templates','webclient','editfile.html'));
 for(const file of walk(path.join(config.liveRoot,'app/static/nas-avatars')))assets.add(path.relative(path.join(config.liveRoot,'app'),file));
 for(const rel of assets){const live=path.join(config.liveRoot,'app',rel);if(fs.existsSync(live))updates.push([path.join(overlay,rel),portableAsset(rel,fs.readFileSync(live))])}
 let patch='';

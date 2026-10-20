@@ -19,7 +19,7 @@ before(async () => {
 after(async()=>{await Promise.all([new Promise(r=>portal.close(r)),new Promise(r=>mock.close(r))]);});
 test('landing page has setup, client and corresponding source links', async()=>{
   const r=await fetch(base); assert.equal(r.status,200); const body=await r.text();
-  for(const link of ['/web/admin/','/web/client/','https://github.com/drakkan/sftpgo/tree/v2.7.6']) assert.ok(body.includes(link));
+  for(const link of ['/web/admin/','/web/client/','https://github.com/drakkan/sftpgo','https://github.com/DPswxz/Air-Cloud']) assert.ok(body.includes(link));
 });
 test('backend health failures are reported',async()=>{
   assert.equal((await fetch(base+'/healthz')).status,200);

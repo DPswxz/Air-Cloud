@@ -15,8 +15,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 -->
 {{- define "navitems"}}
 {{- block "additionalnavitems" .}}{{- end}}
-{{- template "theme-switcher"}}
-<div class="d-flex align-items-center ms-2 ms-lg-3">
+
+<div class="d-flex align-items-center ms-2 ms-lg-3 air-user-menu-slot">
     <div class="btn btn-icon btn-active-light-primary w-35px h-35px w-md-40px h-md-40px" data-kt-menu-trigger="{default:'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
         <img class="nas-avatar-small" src="{{.AvatarURL}}" alt="头像" data-air-i18n-attrs>
     </div>
@@ -50,6 +50,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         </div>
     </div>
 </div>
+{{- template "theme-switcher"}}
 {{- end}}
 
 {{- define "sidebaritems"}}

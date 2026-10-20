@@ -1,0 +1,287 @@
+<!--
+Copyright (C) 2023 Nicola Murino
+
+This WebUI uses the KeenThemes Bootstrap Templates:
+
+https://keenthemes.com/bootstrap-templates
+
+KeenThemes HTML/CSS/JS components are allowed for use only within the
+SFTPGo product and restricted to be used in a resealable HTML template
+that can compete with KeenThemes products anyhow.
+
+This WebUI is allowed for use only within the SFTPGo product and
+therefore cannot be used in derivative works/products without an
+explicit grant from the SFTPGo Team (support@sftpgo.com).
+-->
+{{template "base" .}}
+
+{{- define "extra_css"}}
+<style {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
+    #air-editor-shortcuts { order: -1; }
+    #text_encoding { width: auto !important; max-width: 190px; }
+    .air-editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; width: 100%; }
+    .air-editor-encoding { display: flex !important; align-items: center; gap: 8px; flex-wrap: nowrap !important; min-width: 0; }
+    .air-editor-encoding label { margin: 0; white-space: nowrap; width: auto !important; flex: 0 0 auto; }
+    .air-editor-encoding .select2-container { width: 190px !important; flex: 0 0 auto; }
+    #encoding_status { white-space: nowrap; }
+    @media(max-width:700px) { #encoding_status { display: none; } .air-editor-encoding .select2-container { width: 145px !important; } }
+    .air-editor-encoding select { margin: 0 !important; height: 36px; }
+    .air-editor-actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
+    .air-editor-toolbar .btn { display: inline-flex !important; align-items: center; justify-content: center; height: 36px !important; min-height: 36px !important; width: auto !important; min-width: 0 !important; padding: 0 12px !important; margin: 0 !important; line-height: 1 !important; font-size: 13px !important; white-space: nowrap; flex: 0 0 auto; gap: 6px; }
+    .air-editor-toolbar .btn .air-action-icon { width: 16px; height: 16px; flex: 0 0 16px; margin: 0; }
+    .cm-editor {
+        height: 100%;
+        width: 100%;
+    }
+
+#editor .cm-editor{border-radius:10px;overflow:hidden;font-size:13px;line-height:1.65}
+    #editor .cm-gutters{border-right:1px solid var(--nas-line,#e6ebf3);padding-right:5px}
+    #info_modal .shortcut{display:inline-block;padding:3px 7px;border-radius:5px;background:#edf3ff;color:#36547d;font:500 13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+    [data-bs-theme=dark] #editor .cm-editor{color:#e1e8f3;background:#101827}
+    [data-bs-theme=dark] #editor .cm-gutters{background:#172131;color:#9eacc3;border-color:#2a374b}
+    [data-bs-theme=dark] #editor .cm-activeLineGutter{background:#26354c;color:#e4ecfa}
+    [data-bs-theme=dark] #editor .cm-activeLine{background:#1d2b40}
+    [data-bs-theme=dark] #editor .cm-panels,[data-bs-theme=dark] #editor .cm-tooltip{background:#1b283b;color:#e1e8f3;border-color:#34425a}
+    [data-bs-theme=dark] #editor .cm-textfield{background:#101827;color:#e1e8f3;border-color:#52617a}
+    [data-bs-theme=dark] #info_modal .shortcut{background:#26354c;color:#bed3ff}
+    [data-bs-theme=dark] #info_modal .modal-body{color:#dce5f3}
+</style>
+{{- end}}
+
+{{- define "additionalnavitems"}}
+<div class="d-flex align-items-center ms-2 ms-lg-3" id="air-editor-shortcuts">
+    <div class="btn btn-icon btn-active-light-primary w-35px h-35px w-md-40px h-md-40px" data-bs-toggle="modal" data-bs-target="#info_modal" role="button" aria-label="快捷键" title="快捷键" data-air-i18n-attrs>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
+    </div>
+</div>
+{{- end}}
+
+{{- define "page_body"}}
+{{- template "errmsg" ""}}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h6 id="card_title" class="card-title section-title"></h6>
+        <div class="card-toolbar air-editor-toolbar">
+            <div class="air-editor-encoding">
+            <label for="text_encoding" data-editor-text="encoding">编码</label>
+            <select id="text_encoding" class="form-select form-select-sm w-auto me-3" aria-label="文件编码">
+                <option value="auto" data-editor-text="auto">自动识别</option>
+                <option value="utf-8">UTF-8</option>
+                <option value="gb18030">GBK / GB18030</option>
+                <option value="big5" data-editor-text="big5">繁体中文 Big5</option>
+                <option value="utf-16le">UTF-16 LE</option>
+                <option value="utf-16be">UTF-16 BE</option>
+            </select>
+            <span id="encoding_status" class="text-muted me-3" role="status"></span>
+            </div>
+            <div class="air-editor-actions">
+            <a data-i18n="general.back" class="btn btn-light-primary" href='{{.FilesURL}}?path={{.CurrentDir}}' role="button">Back</a>
+            {{- if not .ReadOnly}}
+            <a id="save_button" type="button" class="btn btn-primary" href="#" role="button">
+                <span data-i18n="general.submit" class="indicator-label">Save</span>
+                <span data-i18n="general.wait" class="indicator-progress">
+                    Please wait...
+                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                </span>
+            </a>
+            {{- end}}
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="editor" class="col-sm-12 border border-light-primary"></div>
+    </div>
+</div>
+{{- end}}
+
+{{- define "modals"}}
+<div class="modal fade" id="info_modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="editor.keybinding" class="modal-title">Editor keybindings</h3>
+                <div data-i18n="[aria-label]general.close" class="btn btn-icon btn-sm btn-active-light-primary" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="ki-solid ki-cross fs-2x text-gray-700"></i>
+                </div>
+            </div>
+            <div class="modal-body fs-5 fw-semibold">
+                <p>
+                    <span class="shortcut">Ctrl-F / Cmd-F</span> => <span data-i18n="editor.search">Open search panel</span>
+                </p>
+                <p>
+                    <span class="shortcut">Alt-G</span> => <span data-i18n="editor.goto">Jump to line</span>
+                </p>
+                <p>
+                    <span class="shortcut">Tab</span> => <span data-i18n="editor.indent_more">Indent more</span>
+                </p>
+                <p>
+                    <span class="shortcut">Shift-Tab</span> => <span data-i18n="editor.indent_less">Indent less</span>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button data-i18n="general.ok" class="btn btn-primary" type="button" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+{{- end}}
+
+{{- define "extra_js"}}
+<script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/air-text-codec.js?v=20261020-encoding1"></script>
+<script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/vendor/codemirror/cm6.bundle.min.js?v=20261019-editor-dark1"></script>
+<script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
+    var cmView;
+    let editorLoading = false, originalBytes, textMetadata, loadedText;
+    const editorMessages = {
+        encoding: ['编码', 'Encoding'], auto: ['自动识别', 'Auto-detect'], big5: ['繁体中文 Big5', 'Traditional Chinese (Big5)'],
+        fileEncoding: ['文件编码', 'File encoding'], saveAs: ['保存为 UTF-8', 'Save as UTF-8'],
+        loadError: ['无法读取文件或识别编码，请选择编码重试或刷新页面。', 'Unable to read the file or detect its encoding. Select an encoding or reload the page.'],
+        decodeError: ['该编码无法完整读取文件，请选择其他编码。', 'This encoding cannot decode the entire file. Select another encoding.'],
+        discard: ['切换编码会丢弃未保存的修改，是否继续？', 'Switching encoding will discard unsaved changes. Continue?']
+    };
+    let editorStatusError = '';
+    function editorText(key) { return editorMessages[key][window.AirI18n?.language === 'en' ? 1 : 0]; }
+    function renderEditorLabels() {
+        document.querySelectorAll('[data-editor-text]').forEach(el => { el.textContent = editorText(el.dataset.editorText); });
+        document.getElementById('text_encoding').setAttribute('aria-label', editorText('fileEncoding'));
+        $('#text_encoding').trigger('change.select2');
+        $('#encoding_status').text(editorStatusError ? editorText(editorStatusError) : textMetadata ? textMetadata.encoding.toUpperCase() + ' · ' + editorText('saveAs') : '');
+    }
+    window.addEventListener('air:languagechange', renderEditorLabels);
+    renderEditorLabels();
+
+    function keepAlive() {
+        axios.get('{{.PingURL}}',{
+            timeout: 15000,
+            responseType: 'text'
+           }).catch(function (error){});
+    }
+
+    //{{- if not .ReadOnly}}
+    function saveFile() {
+        if (!cmView || !textMetadata || editorLoading) return;
+        $('#errorMsg').addClass("d-none");
+        let saveButton = document.querySelector('#save_button');
+        saveButton.setAttribute('data-kt-indicator', 'on');
+        saveButton.disabled = true;
+
+        let uploadPath = '{{.FileURL}}?path='+encodeURIComponent('{{.CurrentDir}}/{{.Name}}');
+        let blob = new Blob([AirTextCodec.encode(cmView.state.doc.toString(), textMetadata)], {type: 'text/plain;charset=utf-8'});
+
+        axios.post(uploadPath, blob, {
+            headers: {
+                'X-CSRF-TOKEN': '{{.CSRFToken}}'
+            },
+            timeout: 600000,
+            validateStatus: function (status) {
+                    return status == 201;
+                }
+        }).then(function (response) {
+            window.location.replace('{{.FilesURL}}?path='+encodeURIComponent('{{.CurrentDir}}'));
+        }).catch(function (error) {
+            saveButton.removeAttribute('data-kt-indicator');
+            saveButton.disabled = false;
+
+            let errorMessage = "";
+            if (error && error.response) {
+                switch (error.response.status) {
+                    case 403:
+                        errorMessage = "fs.save.err403";
+                        break;
+                    case 429:
+                        errorMessage = "fs.save.err429";
+                        break;
+                }
+            }
+            if (!errorMessage){
+                errorMessage = "fs.save.err_generic";
+            }
+            setI18NData($('#errorTxt'), errorMessage);
+            $('#errorMsg').removeClass("d-none");
+        });
+    }
+    //{{- end}}
+
+    $(document).on("i18nload", function(){
+        let message = 'fs.edit_file';
+        //{{- if .ReadOnly}}
+        message = 'fs.view_file';
+        //{{- end}}
+        setI18NData($('#card_title'), message, { path: '{{.Path}}'});
+    });
+
+    $(document).on("i18nshow", async function(){
+        if (cmView || editorLoading) return;
+        editorLoading = true;
+        $('#save_button').attr('aria-disabled', 'true').addClass('disabled');
+        let filename = "{{.Name}}";
+        let extension = filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
+        let options = {
+            oneDark: document.documentElement.dataset.bsTheme === 'dark',
+            fileExt: extension
+        };
+        //{{- if .ReadOnly}}
+        options.readOnly = true;
+        //{{- end}}
+        //{{- if .CSPNonce}}
+        options.cspNonce = "{{.CSPNonce}}";
+        //{{- end}}
+        function showDecoded(encoding) {
+            const decoded = AirTextCodec.decode(originalBytes, encoding);
+            if (cmView) cmView.dispatch({changes: {from: 0, to: cmView.state.doc.length, insert: decoded.text}});
+            textMetadata = decoded;
+            editorStatusError = '';
+            renderEditorLabels();
+            return decoded.text;
+        }
+        let content;
+        try {
+            if (!originalBytes) {
+            const response = await axios.get('{{.FileURL}}', {
+                params: {path: '{{.Path}}'}, responseType: 'arraybuffer', timeout: 30000,
+                headers: {'X-CSRF-TOKEN': '{{.CSRFToken}}'}
+            });
+            originalBytes = response.data;
+            }
+            content = showDecoded($('#text_encoding').val());
+        } catch (error) {
+            editorLoading = false;
+            editorStatusError = 'loadError';
+            renderEditorLabels();
+            if (originalBytes) $('#text_encoding').off('change').on('change', function () {
+                $(document).trigger('i18nshow');
+            });
+            return;
+        }
+        let editorState = cm6.createEditorState(content, options);
+        cmView = cm6.createEditorView(editorState, document.getElementById("editor"));
+        loadedText = cmView.state.doc.toString();
+        editorLoading = false;
+        $('#save_button').removeAttr('aria-disabled').removeClass('disabled');
+        document.getElementById('text_encoding').dataset.previous = $('#text_encoding').val();
+        $('#text_encoding').off('change').on('change', function () {
+            const previous = this.dataset.previous;
+            if (cmView.state.doc.toString() !== loadedText && !window.confirm(editorText('discard'))) { this.value = previous; return; }
+            try {
+                showDecoded(this.value);
+                loadedText = cmView.state.doc.toString();
+                this.dataset.previous = this.value;
+            } catch (_) {
+                this.value = previous;
+                editorStatusError = 'decodeError';
+                renderEditorLabels();
+            }
+        });
+        new MutationObserver(()=>cm6.setEditorTheme(cmView,document.documentElement.dataset.bsTheme==='dark')).observe(document.documentElement,{attributes:true,attributeFilter:['data-bs-theme']});
+
+        var saveBtn = $('#save_button');
+        if (saveBtn){
+            saveBtn.on("click", function(){
+                saveFile();
+            });
+        }
+
+        setInterval(keepAlive, 300000);
+    });
+</script>
+{{- end}}
