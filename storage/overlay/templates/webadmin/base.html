@@ -56,6 +56,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{- define "sidebaritems"}}
 {{- if .LoggedUser.HasPermission "*"}}
 <div class="menu-item"><a class="menu-link" href="/web/admin/all-files"><span class="menu-icon"><i class="ki-duotone ki-folder fs-1"><span class="path1"></span><span class="path2"></span></i></span><span class="menu-title"><span data-air-i18n>全部文件</span></span></a></div>
+<div class="menu-item"><a class="menu-link{{- if eq .CurrentURL "/web/admin/nas-backup"}} active{{- end}}" href="/web/admin/nas-backup"><span class="menu-icon"><i class="ki-duotone ki-save-2 fs-1"><span class="path1"></span><span class="path2"></span></i></span><span class="menu-title"><span data-air-i18n>备份与还原</span></span></a></div>
 {{- end}}
 {{- if .LoggedUser.HasPermission "view_users"}}
 <div class="menu-item">

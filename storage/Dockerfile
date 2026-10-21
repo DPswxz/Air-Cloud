@@ -11,6 +11,7 @@ ENV GOFLAGS=-mod=readonly
 COPY tests/recycle_linux_test.go /tmp/recycle_linux_test.go
 RUN cp internal/httpd/nas_recycle_linux.go /tmp/nas_recycle_linux.go && go test /tmp/nas_recycle_linux.go /tmp/recycle_linux_test.go
 RUN go test internal/httpd/nas_registration_policy.go internal/httpd/nas_registration_test.go
+RUN go test internal/httpd/nas_backup_path.go internal/httpd/nas_backup_path_test.go
 RUN go test internal/httpd/nas_archive.go internal/httpd/nas_archive_cache.go internal/httpd/nas_archive_test.go internal/httpd/nas_archive_cache_test.go
 RUN go build -trimpath -ldflags "-s -w" -o /tmp/sftpgo .
 

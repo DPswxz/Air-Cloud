@@ -271,7 +271,7 @@ index f1512c8..fef3c1f 100644
  			if err == nil {
  				dataprovider.UpdateUserFolderQuota(&vfolder, &c.User, 0, -fileSize, false)
 diff --git a/internal/httpd/server.go b/internal/httpd/server.go
-index 62d6f80..f012b6c 100644
+index 62d6f80..4721cc9 100644
 --- a/internal/httpd/server.go
 +++ b/internal/httpd/server.go
 @@ -270,7 +270,12 @@ func (s *httpdServer) handleWebClientLoginPost(w http.ResponseWriter, r *http.Re
@@ -343,17 +343,18 @@ index 62d6f80..f012b6c 100644
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientPingPath, handlePingRequest)
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientProfilePath,
  				s.handleClientGetProfile)
-@@ -1747,6 +1766,8 @@ func (s *httpdServer) setupWebAdminRoutes() {
+@@ -1747,6 +1766,9 @@ func (s *httpdServer) setupWebAdminRoutes() {
  			}
  			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
  			router.Use(jwtAuthenticatorWebAdmin)
 +			router.With(s.checkAuthRequirements, s.requireBuiltinLogin).Post(webAdminProfilePath+"/avatar", s.handleNASAvatar)
 +			router.With(s.checkAuthRequirements, s.requireBuiltinLogin).Get(webBaseAdminPath+"/all-files", s.handleNASAdminFiles)
++			s.registerNASBackupRoutes(router)
  
  			router.Get(webLogoutPath, s.handleWebAdminLogout)
  			router.With(s.refreshCookie, s.checkAuthRequirements, s.requireBuiltinLogin).Get(
 diff --git a/internal/httpd/webadmin.go b/internal/httpd/webadmin.go
-index cf063d6..b29aca2 100644
+index cf063d6..f37a76d 100644
 --- a/internal/httpd/webadmin.go
 +++ b/internal/httpd/webadmin.go
 @@ -111,6 +111,9 @@ var (
@@ -366,7 +367,15 @@ index cf063d6..b29aca2 100644
  	commonBasePage
  	Title               string
  	CurrentURL          string
-@@ -664,6 +667,9 @@ func (s *httpdServer) getBasePageData(title, currentURL string, w http.ResponseW
+@@ -574,6 +577,7 @@ func loadAdminTemplates(templatesPath string) {
+ 	adminTemplates[templateProfile] = profileTmpl
+ 	adminTemplates[templateChangePwd] = changePwdTmpl
+ 	adminTemplates[templateMaintenance] = maintenanceTmpl
++	loadNASBackupTemplate(templatesPath)
+ 	adminTemplates[templateDefender] = defenderTmpl
+ 	adminTemplates[templateIPLists] = ipListsTmpl
+ 	adminTemplates[templateIPList] = ipListTmpl
+@@ -664,6 +668,9 @@ func (s *httpdServer) getBasePageData(title, currentURL string, w http.ResponseW
  		FolderQuotaScanURL:  webScanVFolderPath,
  		MaintenanceURL:      webMaintenancePath,
  		LoggedUser:          getAdminFromToken(r),
@@ -376,7 +385,7 @@ index cf063d6..b29aca2 100644
  		IsEventManagerPage:  isEventManagerResource(currentURL),
  		IsIPManagerPage:     isIPListsResource(currentURL),
  		IsServerManagerPage: isServerManagerResource(currentURL),
-@@ -2975,15 +2981,18 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
+@@ -2975,15 +2982,18 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
  		s.renderProfilePage(w, r, err)
  		return
  	}

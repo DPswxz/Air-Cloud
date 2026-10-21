@@ -89,3 +89,16 @@ function schedule(){if(!queued){queued=true;requestAnimationFrame(enhance)}}func
 
 // Keep the recycle title after localization updates the underlying file page.
 (()=>{if(!new URL(location.href).searchParams.has('air_trash'))return;function sync(){if(document.title!==window.AirI18n.t("Air Cloud - 回收站"))document.title=window.AirI18n.t("Air Cloud - 回收站")}sync();new MutationObserver(sync).observe(document.head,{childList:true,subtree:true,characterData:true})})();
+// Let table action menus escape scroll containers and fit the phone viewport.
+(()=>{
+ if(location.pathname.startsWith('/web/admin/'))document.documentElement.classList.add('air-admin-layout');
+ document.addEventListener('click',event=>{
+  const trigger=event.target.closest?.('[data-kt-menu-trigger]');
+  if(!trigger||!trigger.closest('.table-responsive,table,.card-toolbar'))return;
+  trigger.setAttribute('data-kt-menu-overflow','true');
+  requestAnimationFrame(()=>{
+   const popper=window.KTUtil?.data(trigger)?.get('popper');
+   popper?.setOptions(options=>({...options,modifiers:options.modifiers.map(modifier=>modifier.name==='flip'?{...modifier,enabled:true,options:{...modifier.options,enabled:true,fallbackPlacements:['top-end','bottom-end','top-start','bottom-start']}}:modifier.name==='preventOverflow'?{...modifier,options:{...modifier.options,altAxis:true,padding:12,rootBoundary:'viewport'}}:modifier)}));
+  });
+ },true);
+})();

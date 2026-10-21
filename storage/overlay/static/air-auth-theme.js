@@ -1,4 +1,17 @@
 (()=>{'use strict';if(window.__airThemeReady)return;window.__airThemeReady=true;
+// Explicit SVG variants follow the website theme independently of OS image preferences.
+function syncAvatarTheme(){
+ const theme=document.documentElement.dataset.bsTheme==='dark'?'dark':'light';
+ for(const img of document.querySelectorAll('img[src*="/nas-avatars/avatar-"]')){
+  const url=new URL(img.getAttribute('src'),location.href);
+  if(!/\/avatar-\d+(?:-light|-dark)?\.svg$/.test(url.pathname))continue;
+  url.pathname=url.pathname.replace(/(?:-light|-dark)?\.svg$/,'-'+theme+'.svg');
+  url.searchParams.set('v','20261021-avatar-theme3');
+  if(img.src!==url.href)img.src=url.href;
+ }
+}
+new MutationObserver(syncAvatarTheme).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['src','data-bs-theme']});
+document.addEventListener('DOMContentLoaded',syncAvatarTheme);
 function saved(){try{return localStorage.getItem('data-bs-theme-mode')||localStorage.getItem('data-bs-theme')||'system'}catch{return 'system'}}
 let preference=saved(),button,menu;const media=matchMedia('(prefers-color-scheme: dark)'),labels={light:'明亮',dark:'深色',system:'自动'};
 const t=text=>window.AirI18n?.t(text)||text;
