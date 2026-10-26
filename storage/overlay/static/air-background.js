@@ -1,4 +1,11 @@
 (()=>{
+// Hide missing-font placeholders until the transfer icon font has loaded.
+const transferIconStyle=document.createElement('style');
+transferIconStyle.textContent='.air-transfer-theme-icon{visibility:hidden}html.air-transfer-icons-ready .air-transfer-theme-icon{visibility:visible}';
+document.head.append(transferIconStyle);
+if(document.fonts)document.fonts.load('23px air-transfer-keenicons','\uec2f\uec30\uec5e\uec5f').then(fonts=>{if(fonts.length)document.documentElement.classList.add('air-transfer-icons-ready')}).catch(()=>{});
+
+
 let frame=document.getElementById('air-main-frame')||{contentWindow:window,contentDocument:document,addEventListener(){},removeEventListener(){}};let dateFormatter=new Intl.DateTimeFormat(window.AirI18n.language,{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});let renderTimer,lastRender=0;let leaving=false;let owner='',config={},jobs=[],tab='active',uploading=0,downloading=0,sequence=0,batchSequence=0,minimized=true;
 let resumeEngine;const resumeReady=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/static/air-download-resume.js?v=20261017-resume6';script.onload=()=>{resumeEngine=AirDownloadResume.create({translate:value=>window.AirI18n.t(value)});resolve(resumeEngine)};script.onerror=()=>reject(Error(window.AirI18n.t("无法加载断点续传组件，请刷新后重试。")));document.head.append(script)});resumeReady.catch(()=>{});
 let restoredOwner='';
