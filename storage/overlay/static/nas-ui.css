@@ -89,6 +89,17 @@ body{background:var(--nas-page)!important;color:var(--nas-text);font-family:Inte
 
 .air-folder-guide footer button{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:9px 16px!important;border:1px solid transparent!important;border-radius:9px!important;font:600 13px/1.4 system-ui!important;cursor:pointer;box-shadow:none!important;transition:background .15s,color .15s}.air-folder-guide footer [data-cancel]{background:var(--nas-page,#f4f7fc)!important;color:var(--nas-text,#20314a)!important;border-color:var(--nas-line,#e6ebf3)!important}.air-folder-guide footer [data-continue]{background:var(--nas-accent,#3478f6)!important;color:#fff!important}.air-folder-guide footer [data-continue]:hover{filter:brightness(.95)}.air-folder-guide footer button:disabled{opacity:.6;cursor:wait}.air-folder-guide footer button:focus-visible{outline:2px solid var(--nas-accent,#3478f6);outline-offset:3px}
 
+.air-browser-download-links{display:flex;flex-direction:column;gap:10px;max-height:50vh;overflow:auto;min-width:0}
+.air-browser-download-links a{display:flex;align-items:center;min-height:44px;box-sizing:border-box;padding:12px 16px;border:1px solid var(--nas-line,#e6ebf3);border-radius:10px;background:var(--nas-page,#f4f7fc);color:var(--nas-accent,#3478f6);font:600 14px/1.5 system-ui;text-decoration:none;white-space:normal;overflow-wrap:anywhere;text-align:left}
+.air-browser-download-links a:hover{filter:brightness(.97)}
+.air-browser-download-links a:focus-visible{outline:2px solid var(--nas-accent,#3478f6);outline-offset:-2px}
+.air-folder-guide footer [data-close]{background:var(--nas-accent,#3478f6);color:#fff}
+.air-folder-guide{max-height:calc(100dvh - 32px);overflow:auto}
+/* Older open shells may still render download links without a header/footer. */
+.air-folder-guide>strong{display:block;margin-bottom:20px;font-size:18px}
+.air-folder-guide>div>a.btn{display:flex;align-items:center;min-height:44px;box-sizing:border-box;padding:12px 16px!important;border:1px solid var(--nas-line,#e6ebf3)!important;border-radius:10px!important;background:var(--nas-page,#f4f7fc)!important;color:var(--nas-accent,#3478f6)!important;font:600 14px/1.5 system-ui!important;text-decoration:none!important;white-space:normal;overflow-wrap:anywhere;text-align:left;margin:0!important}
+.air-folder-guide>button.btn{appearance:none;-webkit-appearance:none;display:block;min-height:38px;padding:9px 16px!important;margin:22px 0 0 auto!important;border:1px solid transparent!important;border-radius:9px!important;background:var(--nas-accent,#3478f6)!important;color:#fff!important;font:600 13px/1.4 system-ui!important;cursor:pointer;box-shadow:none!important}
+
 .nas-files-card>.card-header .air-directory-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;padding:0!important;margin:0 8px 0 0!important;flex-shrink:0}.air-directory-icon svg{margin:0!important;pointer-events:none}.air-directory-icon[aria-disabled="true"]{opacity:.35;pointer-events:none}
 
 .nas-files-card>.card-header{min-height:0!important;padding-top:14px!important;padding-bottom:6px!important}.nas-files-card>.card-body{padding-top:8px!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon{background:color-mix(in srgb,var(--nas-accent) 9%,var(--nas-surface))!important;color:var(--nas-accent)!important;border:0!important;box-shadow:none!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon:hover,:is(.nas-files-card,.air-recycle-card) .air-directory-icon:focus{background:color-mix(in srgb,var(--nas-accent) 16%,var(--nas-surface))!important;color:var(--nas-accent)!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon svg{width:18px!important;height:18px!important;display:block;flex-shrink:0;color:inherit!important;fill:none!important;stroke:currentColor!important}:is(.nas-files-card,.air-recycle-card) .air-directory-icon svg path{fill:none!important;stroke:currentColor!important}.air-directory-icon:focus-visible{outline:2px solid var(--nas-accent);outline-offset:2px}
@@ -351,37 +362,26 @@ img[src*="/nas-avatars/"]{color-scheme:light}
   .nas-files-card #file_manager_new_folder{flex-wrap:wrap;gap:8px}
   .nas-files-card #file_manager_new_folder_input{flex:1 1 140px;min-width:0;max-width:none!important;margin:0!important}
   .nas-files-card #file_manager_new_folder>.btn{width:44px!important;height:44px!important;margin:0!important}
-  .nas-files-card #file_manager_list{display:block;width:100%!important;table-layout:auto}
+  .nas-files-card #file_manager_list_container{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .nas-files-card #file_manager_list{display:block;width:100%!important;min-width:0;table-layout:auto}
   .nas-files-card #file_manager_list colgroup{display:none}
   .nas-files-card #file_manager_list :is(thead,tbody){display:block;width:100%}
-  .nas-files-card #file_manager_list thead tr{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,.7fr) minmax(0,1.3fr);height:auto!important;gap:8px}
-  .nas-files-card #file_manager_list thead th{width:auto!important;min-width:0!important;height:auto!important;white-space:normal;padding:10px 0!important;font-size:11px!important}
-  .nas-files-card #file_manager_list thead th:last-child{display:none}
-  .nas-files-card #file_manager_list thead :is(.dt-column-header,.dt-column-title){height:auto!important;min-height:24px;white-space:normal!important;max-width:100%}
-  .nas-files-card #file_manager_list tbody>tr{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,1.5fr) 44px;gap:8px 10px;height:auto!important;padding:16px 0;border-bottom:1px dashed var(--nas-line)}
+  .nas-files-card #file_manager_list :is(thead,tbody)>tr{display:grid;grid-template-columns:24px minmax(0,1fr) 60px 80px;align-items:center;gap:8px}
+  .nas-files-card #file_manager_list thead th{display:block;width:auto!important;min-width:0!important;height:auto!important;white-space:nowrap;padding:8px 0!important;font-size:14px!important}
+  .nas-files-card #file_manager_list thead :is(.dt-column-header,.dt-column-title){height:auto!important;min-height:24px;white-space:nowrap!important;max-width:100%}
+  .nas-files-card #file_manager_list tbody>tr{height:auto!important;min-height:48px;padding:2px 0;border-bottom:1px dashed var(--nas-line)}
   .nas-files-card #file_manager_list tbody>tr:last-child{border-bottom:0}
-  .nas-files-card #file_manager_list tbody>tr>td{display:block;width:auto!important;min-width:0!important;max-width:none;padding:0!important;border:0!important;margin:0!important;text-align:left!important;white-space:normal}
-  .nas-files-card #file_manager_list tbody>tr>td:first-child{grid-column:1;grid-row:1}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2){grid-column:2/4;grid-row:1}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2)>.d-flex{min-width:0;align-items:flex-start!important}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) :is(a,span){min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal;font-size:15px;line-height:1.5}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) .ki-duotone{flex-shrink:0;margin-right:10px!important}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(3){grid-column:2;grid-row:2;font-size:12px;color:var(--nas-muted)}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(4){grid-column:3/-1;grid-row:2;font-size:12px;color:var(--nas-muted);overflow-wrap:anywhere}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5){grid-column:4;grid-row:1;align-self:center;justify-self:end}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5):not(:has(a,button)){display:none}
-  .nas-files-card #file_manager_list tbody>tr:not(:has(>td:nth-child(5) a,>td:nth-child(5) button))>td:nth-child(2){grid-column:2/-1}
-  .nas-files-card #file_manager_list tbody>tr>td:is(:nth-child(3),:nth-child(4))::before{display:block;margin-bottom:3px;color:var(--nas-muted);font-size:12px;font-weight:400;line-height:1.5}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(3)::before{content:'大小'}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(4)::before{content:'最近修改'}
-  .nas-files-card #file_manager_list tbody>tr>td:is(:nth-child(3),:nth-child(4)):empty::after{content:'—'}
-  :lang(en) .nas-files-card #file_manager_list tbody>tr>td:nth-child(3)::before{content:'Size'}
-  :lang(en) .nas-files-card #file_manager_list tbody>tr>td:nth-child(4)::before{content:'Last modified'}
+  .nas-files-card #file_manager_list tbody>tr>td{display:block;grid-row:1;width:auto!important;min-width:0!important;max-width:none;padding:0!important;border:0!important;margin:0!important;text-align:left!important;white-space:nowrap;font-size:13px}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2)>.d-flex{min-width:0;align-items:center!important}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) a{min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:normal;font-size:16px;line-height:1.4}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) a:first-child{flex-shrink:0}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) .ki-duotone{font-size:21px!important;flex-shrink:0;margin-right:6px!important}
+  .nas-files-card #file_manager_list tbody>tr>td:is(:nth-child(3),:nth-child(4)){color:var(--nas-muted)}
   .nas-files-card #file_manager_list tbody>tr>td:nth-child(5)>.d-flex{justify-content:flex-end!important}
-  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .btn{width:44px!important;height:44px!important;min-height:44px!important}
+  .nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .btn{width:40px!important;height:44px!important;min-height:44px!important}
   .nas-files-card #file_manager_list .dataTables_empty{grid-column:1/-1!important;padding:24px 0!important;text-align:center!important}
-  .nas-files-card #file_manager_list .form-check{min-height:32px;margin:0!important;align-items:flex-start}
-  .nas-files-card #file_manager_list .form-check-input{width:22px;height:22px;margin:0!important}
+  .nas-files-card #file_manager_list .form-check{min-height:24px;margin:0!important;align-items:center}
+  .nas-files-card #file_manager_list .form-check-input{width:20px;height:20px;margin:0!important}
   .air-recycle-card .table-responsive{overflow:visible}
   .air-recycle-card .table,.air-recycle-card .table :is(thead,tbody){display:block;width:100%}
   .air-recycle-card .table thead tr{display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;height:auto!important}
@@ -519,3 +519,184 @@ img[src*="/nas-avatars/"]{color-scheme:light}
  .nas-avatar-picker .nas-avatar-options{grid-auto-rows:44px;height:152px;max-height:152px}
  .nas-avatar-picker .nas-avatar-option{width:44px;height:44px;min-height:44px;max-width:44px}
 }
+/* Keep mobile table width and processing overlays inside the file card. */
+@media(max-width:700px){
+ .nas-files-card,.nas-files-card>.card-body,.nas-files-card #file_manager_list_wrapper{min-width:0;max-width:100%;box-sizing:border-box}
+ .nas-files-card #file_manager_list_container{width:100%;max-width:100%;min-width:0;position:relative;box-sizing:border-box}
+ .nas-files-card #file_manager_list_wrapper{position:relative}
+ .nas-files-card :is(.dt-processing,.dataTables_processing){box-sizing:border-box;left:0!important;right:0!important;width:auto!important;min-width:0!important;max-width:100%!important;margin-left:0!important;margin-right:0!important;padding:16px 8px!important;transform:none!important;white-space:normal;overflow-wrap:anywhere;font-size:15px}
+}
+
+@media(max-width:700px){
+ .nas-files-card>.card-body{padding-left:12px!important;padding-right:12px!important}
+ .nas-files-card #file_manager_list :is(thead,tbody)>tr{column-gap:6px}
+ .nas-files-card #file_manager_list :is(thead th,tbody>tr>td):nth-child(4){display:none!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(5){grid-column:4;min-width:0}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .btn{width:36px!important;min-width:36px!important;height:44px!important;padding:0!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .ms-2{margin-left:4px!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) a:last-child{flex:1;display:block}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(3){font-variant-numeric:tabular-nums;font-size:13px}
+ .nas-files-card #file_manager_list_wrapper>.dt-layout-row{min-width:0;max-width:100%}
+ .page-loader :is(#loading_info,#loading_message){box-sizing:border-box;max-width:calc(100vw - 32px);white-space:normal;overflow-wrap:anywhere;text-align:center}
+}
+
+.air-inline-preview{box-sizing:border-box;width:min(1100px,96vw);height:92dvh;max-width:100vw;max-height:96dvh;padding:0;border:1px solid var(--nas-line);border-radius:12px;background:var(--nas-surface,#fff);color:var(--nas-text);overflow:hidden}
+.air-inline-preview[open]{display:flex;flex-direction:column}
+.air-inline-preview::backdrop{background:rgba(0,0,0,.5)}
+.air-inline-preview>header{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--nas-line)}
+.air-inline-preview>header strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.air-inline-preview>header button{width:40px;height:40px;flex-shrink:0;border:0;border-radius:8px;background:transparent;color:inherit;font-size:26px;cursor:pointer}
+.air-inline-preview>iframe{display:block;width:100%;min-height:0;flex:1;border:0;background:var(--nas-surface,#fff)}
+@media(max-width:700px){
+ .nas-files-card #file_manager_list tbody>tr{row-gap:0;padding:4px 0;min-height:64px}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(4){display:block!important;grid-row:2;grid-column:2/4;font-size:12px;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(5){grid-row:1/3;align-self:center}
+ .nas-files-card>.card-header{padding:12px!important;gap:8px!important}
+ .nas-files-card>.card-header .card-toolbar [data-kt-filemanager-table-toolbar="base"]>.btn{font-size:13px!important;min-height:40px!important;height:40px!important;padding:8px 10px!important;gap:4px}
+ .nas-files-card :is(#air-parent-directory,#air-refresh-files){width:40px!important;min-width:40px!important;flex-basis:40px}
+ .nas-files-card .air-selected-actions .menu-link{font-size:13px;min-height:40px;padding:8px!important}
+ #modal_upload .modal-body{padding:12px!important}
+ #modal_upload .modal-header,#modal_upload .modal-footer{padding:12px!important;gap:8px}
+ #modal_upload :is(.modal-body,.modal-footer) .btn{font-size:13px!important;min-height:40px!important;padding:8px 12px!important;margin:0!important}
+ #modal_upload .dropzone{padding:12px!important;min-height:100px}
+ .air-inline-preview{width:100vw;height:96dvh;max-height:100dvh;border-radius:8px;margin:auto}
+}
+
+/* Keep filename and timestamp together; actions must not stretch the first line. */
+@media(max-width:700px){
+ .nas-files-card #file_manager_list tbody>tr{grid-template-rows:24px 16px;row-gap:0;min-height:60px;padding:10px 0;align-content:center;box-sizing:border-box}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(4){font-size:11px;line-height:16px;align-self:start;margin:0!important;padding:0!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(2) a{line-height:24px}
+ .nas-files-card #file_manager_list tbody>tr>td:first-child{grid-row:1/3;align-self:center}
+}
+
+/* Filename and timestamp share a normal flow container, including on iOS tables. */
+.air-file-mobile-time{display:none}
+@media(max-width:700px){
+ .nas-files-card #file_manager_list tbody>tr{grid-template-rows:auto;min-height:64px;padding:10px 0!important;align-items:center}
+ .nas-files-card #file_manager_list tbody>tr>td{grid-row:1!important;align-self:center!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(4){display:none!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(2){overflow:hidden}
+ .nas-files-card #file_manager_list .air-file-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+ .nas-files-card #file_manager_list .air-file-title>.d-flex{display:flex;align-items:center;min-width:0;height:24px}
+ .nas-files-card #file_manager_list .air-file-title a{line-height:24px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px}
+ .nas-files-card #file_manager_list .air-file-title a:first-child{flex-shrink:0}
+ .nas-files-card #file_manager_list .air-file-title a:last-child{flex:1}
+ .nas-files-card #file_manager_list .air-file-mobile-time{display:block;font-size:11px;line-height:16px;color:var(--nas-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:0}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .btn{width:34px!important;min-width:34px!important;height:36px!important;min-height:36px!important;padding:0!important;border-radius:8px!important}
+}
+
+@media(max-width:700px){
+ .nas-files-card #file_manager_list tbody>tr{min-height:0;padding:8px 0 3px!important;align-content:start}
+}
+
+@media(max-width:700px){
+ .nas-files-card #file_manager_list tbody>tr{min-height:0;padding:8px 0!important;align-content:start}
+ .nas-files-card #file_manager_list .air-file-mobile-time{width:calc(100% + 66px);max-width:none}
+}
+
+@media(max-width:700px){.nas-files-card #file_manager_list tbody>tr>td:nth-child(2){overflow:visible}.nas-files-card #file_manager_list .air-file-title>.d-flex{overflow:hidden}}
+
+@media(max-width:700px){
+ .nas-files-card #file_manager_list :is(thead,tbody)>tr{grid-template-columns:22px minmax(0,1fr) 68px 34px;column-gap:4px}
+ .nas-files-card #file_manager_list :is(thead th,tbody>tr>td):nth-child(3){text-align:right!important;padding-right:2px!important}
+ .nas-files-card #file_manager_list tbody>tr>td:nth-child(5){justify-self:end;width:100%!important}
+ .nas-files-card #file_manager_list .air-file-mobile-time{width:calc(100% + 72px)}
+}
+
+@media(max-width:700px){.nas-files-card #file_manager_list tbody>tr>td:nth-child(5) .ms-2{margin-left:0!important}}
+
+
+
+@media(max-width:991.98px){
+ #kt_app_sidebar.app-sidebar{width:220px!important;max-width:calc(100vw - 64px)!important;box-sizing:border-box}
+ #kt_app_sidebar .app-sidebar-header{padding:18px 12px!important}
+ #kt_app_sidebar #kt_app_sidebar_navs_wrappers{margin-left:8px!important;margin-right:8px!important}
+ #kt_app_sidebar .menu-link{padding:10px 12px!important;min-height:44px;margin:2px 0;justify-content:flex-start;gap:10px}
+ #kt_app_sidebar .menu-link .menu-title{flex:1;min-width:0;font-size:14px}
+ #kt_app_sidebar .app-sidebar-logo .text-sidebar{font-size:16px!important}
+}
+
+@media(max-width:700px){
+ .nas-files-card .air-selected-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:6px;width:100%}
+ .nas-files-card .air-selected-actions .menu-item{flex:0 0 auto;width:auto;min-width:0;padding:0!important;margin:0}
+ .nas-files-card .air-selected-actions .menu-link{width:auto;min-width:0;min-height:36px;padding:6px 8px!important;font-size:13px!important;line-height:20px;white-space:nowrap;overflow-wrap:normal;gap:0;box-sizing:border-box}
+ .nas-files-card .air-selected-actions .air-action-icon{display:inline-block;width:14px;height:14px;flex:0 0 14px;margin-right:4px}
+}
+
+.air-inline-preview>.air-inline-text{flex:1;min-height:0;overflow:auto;margin:0;padding:16px;color:var(--nas-text);font:14px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text}
+
+/* Compact mobile shares and recycle views, matching the file list typography. */
+@media(max-width:700px){
+ :is(.air-shares-card,.air-recycle-card){min-width:0;max-width:100%;box-sizing:border-box}
+ :is(.air-shares-card,.air-recycle-card)>.card-header{padding:10px 12px!important;min-height:48px!important}
+ :is(.air-shares-card,.air-recycle-card)>.card-header .card-title{font-size:16px!important;line-height:24px}
+ :is(.air-shares-card,.air-recycle-card)>.card-body{padding:8px 12px 12px!important;min-width:0;max-width:100%;box-sizing:border-box}
+ .air-shares-card :is(#dataTable,#dataTable_wrapper,#card_content){min-width:0;max-width:100%;width:100%!important}
+ .air-shares-card #dataTable thead th{font-size:13px!important;padding:8px 4px 8px 0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .air-shares-card #table_body>tr{grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:8px 0;min-height:0;align-items:center}
+ .air-shares-card .air-share-name{align-items:center;gap:6px;min-width:0}
+ .air-shares-card .air-share-name>span{font-size:16px;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+ .air-shares-card .air-share-name>.ki-duotone{font-size:21px!important;margin:0;flex-shrink:0}
+ .air-shares-card #table_body>tr>td:nth-child(3){grid-column:1;grid-row:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;line-height:18px;color:var(--nas-muted)}
+ .air-shares-card #table_body>tr>td:nth-child(4){grid-column:2;grid-row:2;white-space:nowrap;font-size:11px;line-height:18px;color:var(--nas-muted)}
+ .air-shares-card .air-share-mobile-label{display:inline;margin:0 4px 0 0;font-size:11px;line-height:18px}
+ .air-shares-card :is(.air-share-used-cell,.air-share-count-cell)>span:last-child{font-size:11px;line-height:18px;overflow-wrap:normal}
+ .air-shares-card #table_body>tr>td:nth-child(2){grid-column:1/-1;grid-row:3;padding-top:4px!important}
+ .air-shares-card .air-share-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px}
+ .air-shares-card #table_body .air-share-actions>.btn{width:auto!important;min-width:0!important;flex:0 0 auto;height:36px!important;min-height:36px!important;padding:0 8px!important;font-size:13px!important;line-height:20px;gap:0}
+ .air-shares-card .air-share-actions .air-action-icon{width:14px;height:14px;flex-basis:14px;margin-right:4px}
+ .air-shares-card .air-shares-toolbar{margin-bottom:6px!important;gap:6px}
+ .air-shares-card .air-shares-toolbar>.position-relative{width:100%;min-width:0;margin:0!important}
+ .air-shares-card .air-shares-toolbar .form-control{font-size:14px!important;max-width:100%;box-sizing:border-box}
+ .air-recycle-card .table-responsive{min-width:0;max-width:100%;overflow-x:hidden}
+ .air-recycle-card .table thead tr,.air-recycle-card .table tbody>tr[data-id]{grid-template-columns:22px minmax(0,1fr) 68px;column-gap:4px}
+ .air-recycle-card .table thead th{font-size:13px!important;padding:8px 0!important}
+ .air-recycle-card .table thead th:nth-child(4){display:block;grid-column:3;text-align:right}
+ .air-recycle-card .table tbody>tr[data-id]{row-gap:2px;padding:8px 0;min-height:0;align-items:center}
+ .air-recycle-card .air-recycle-select-cell{grid-column:1;grid-row:1;align-self:start}
+ .air-recycle-card .air-recycle-name-cell{grid-column:2;grid-row:1;overflow:hidden}
+ .air-recycle-card .air-recycle-name{align-items:center;gap:4px;min-width:0;min-height:24px}
+ .air-recycle-card .air-recycle-name>span{font-size:16px;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .air-recycle-card .air-recycle-name>svg{width:20px;height:20px;flex:0 0 20px}
+ .air-recycle-card .air-recycle-size-cell{grid-column:3!important;grid-row:1!important;text-align:right!important;font-size:13px;white-space:nowrap;align-self:center}
+ .air-recycle-card .air-recycle-size-cell::before{display:none}
+ .air-recycle-card .air-recycle-date-cell:nth-child(5){grid-column:2/-1;grid-row:2;font-size:11px;line-height:16px;color:var(--nas-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .air-recycle-card .air-recycle-path-cell{grid-column:2/-1;grid-row:3;font-size:11px;line-height:16px;color:var(--nas-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .air-recycle-card :is(.air-recycle-path-cell,.air-recycle-date-cell)::before{display:inline;margin:0 4px 0 0;font-size:11px}
+ .air-recycle-card .form-check{min-height:24px;align-items:center}
+ .air-recycle-card .form-check-input{width:20px;height:20px}
+ .air-recycle-card .air-recycle-toggle,.air-recycle-card .air-recycle-toggle-spacer{width:20px;min-width:20px;flex-basis:20px}
+ .air-recycle-card .air-recycle-tree{padding-left:10px;margin-top:4px}
+ .air-recycle-card .air-recycle-child-name{font-size:14px;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+ .air-recycle-card .air-recycle-child-size{font-size:12px;white-space:nowrap}
+ .air-recycle-card .air-recycle-tools{gap:6px;margin-bottom:6px!important}
+ .air-recycle-card .air-recycle-retention{font-size:11px;line-height:16px;flex-basis:100%}
+ .air-recycle-card .air-recycle-status-row{min-height:0!important;margin:4px 0 6px!important;flex-wrap:wrap;gap:4px}
+ .air-recycle-card .air-recycle-message{font-size:12px;line-height:18px}
+ .air-recycle-card .air-recycle-selection{display:flex;flex-wrap:wrap;gap:6px;min-height:0!important}
+ .air-recycle-card .air-recycle-selection[hidden]{display:none!important}
+ .air-recycle-card .air-recycle-selection>span{font-size:12px;line-height:18px;flex-basis:100%}
+ .air-recycle-card :is(#air-recycle-empty,.air-recycle-selection>.btn){width:auto!important;min-width:0!important;flex:0 0 auto;height:36px!important;min-height:36px!important;padding:0 8px!important;font-size:13px!important}
+ .air-recycle-card #air-recycle-refresh{width:36px!important;height:36px!important;min-height:36px!important;padding:0!important}
+ .air-recycle-card .air-action-icon{width:14px;height:14px;flex-basis:14px;margin-right:4px}
+ :is(.air-shares-card,.air-recycle-card) :is(.dt-processing,.dataTables_processing){box-sizing:border-box;left:0!important;right:0!important;width:auto!important;max-width:100%;margin-left:0!important;padding:12px 8px!important;white-space:normal;overflow-wrap:anywhere}
+ .air-shares-card #dataTable_wrapper{position:relative}
+}
+
+.air-inline-preview.air-preview-loading>iframe{visibility:hidden}
+.air-inline-loading{position:absolute;inset:57px 0 0;display:flex;align-items:center;justify-content:center;background:var(--nas-surface,#fff);color:var(--nas-muted);font-size:14px;z-index:1}
+
+#file_manager_list tr[draggable="true"]{cursor:grab}
+.air-moving-drag{user-select:none}
+#file_manager_list tr.air-move-drop-target>td{background:color-mix(in srgb,var(--bs-primary,#3981f7) 7%,var(--bs-body-bg,#fff))!important;outline:none;box-shadow:none}
+#file_manager_list tr.air-move-drop-target>td:first-child{border-radius:10px 0 0 10px}
+#file_manager_list tr.air-move-drop-target>td:last-child{border-radius:0 10px 10px 0}
+.air-move-outline{position:fixed;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--bs-primary,#3981f7) 45%,transparent);border-radius:10px;pointer-events:none;z-index:1050}
+.air-move-preview{position:fixed;z-index:1080;opacity:.9;left:0;top:0;display:flex;align-items:center;gap:10px;max-width:320px;padding:12px 16px;border:1px solid rgba(148,163,184,.25);border-radius:12px;background:var(--nas-surface,#fff);color:var(--bs-body-color,#334155);box-shadow:0 8px 28px rgba(15,23,42,.16);font:500 14px/20px system-ui,sans-serif;pointer-events:none}
+.air-move-preview-icon{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:8px;background:rgba(59,130,246,.12);color:var(--bs-primary,#3981f7);font-size:20px}
+.air-move-preview-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.air-move-preview-count{flex:none;padding:2px 7px;border-radius:20px;background:var(--bs-primary,#3981f7);color:#fff;font-size:12px}
+
+
+[data-kt-filemanager-table-nav-bar="base"] a{padding:5px 7px;border-radius:7px}[data-kt-filemanager-table-nav-bar="base"] a.air-move-drop-target{background:color-mix(in srgb,var(--bs-primary,#3981f7) 14%,transparent);color:var(--bs-primary,#3981f7)}

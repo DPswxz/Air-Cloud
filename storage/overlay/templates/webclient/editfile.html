@@ -16,6 +16,17 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{template "base" .}}
 
 {{- define "extra_css"}}
+<script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>if(window.parent!==window&&new URLSearchParams(location.search).get('air_editor_only')==='1')document.documentElement.classList.add('air-editor-only');</script>
+<style>
+html.air-editor-only :is(#kt_app_header,#kt_app_sidebar,#kt_app_footer,#kt_app_toolbar,#kt_scrolltop,.air-editor-actions>a:not(#save_button),#card_title){display:none!important}
+html.air-editor-only :is(body,#kt_app_wrapper,#kt_app_main,#kt_app_content,#kt_app_content_container){margin:0!important;padding:0!important;min-width:0;--bs-app-header-height:0px;--bs-app-toolbar-height:0px;--bs-app-sidebar-width:0px}
+html.air-editor-only #kt_app_content_container>.card{border:0!important;border-radius:0!important;box-shadow:none!important;min-height:100dvh}
+html.air-editor-only .card-header{padding:10px 12px!important;min-height:0!important}
+html.air-editor-only .card-body{padding:8px!important}
+html.air-editor-only #editor{height:calc(100dvh - 110px)!important;min-height:180px}
+html.air-editor-only .air-editor-toolbar{gap:8px}
+html.air-editor-only .air-editor-encoding .select2-container{width:130px!important}
+</style>
 <style {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
     #air-editor-shortcuts { order: -1; }
     #text_encoding { width: auto !important; max-width: 190px; }
@@ -130,7 +141,9 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/air-text-codec.js?v=20261020-encoding1"></script>
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/vendor/codemirror/cm6.bundle.min.js?v=20261019-editor-dark1"></script>
 <script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
+    function airEditorReady(){document.documentElement.setAttribute('data-air-preview-ready','1');if(window.parent!==window)window.parent.postMessage({type:'air-editor-ready'},location.origin);}
     var cmView;
+    window.airEditorHasChanges=()=>!!cmView&&cmView.state.doc.toString()!==loadedText;
     let editorLoading = false, originalBytes, textMetadata, loadedText;
     const editorMessages = {
         encoding: ['编码', 'Encoding'], auto: ['自动识别', 'Auto-detect'], big5: ['繁体中文 Big5', 'Traditional Chinese (Big5)'],
@@ -177,7 +190,11 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
                     return status == 201;
                 }
         }).then(function (response) {
-            window.location.replace('{{.FilesURL}}?path='+encodeURIComponent('{{.CurrentDir}}'));
+            if(document.documentElement.classList.contains('air-editor-only')){
+                loadedText=cmView.state.doc.toString();originalBytes=AirTextCodec.encode(loadedText,textMetadata);
+                saveButton.removeAttribute('data-kt-indicator');saveButton.disabled=false;
+                $('#encoding_status').text(window.AirI18n.t('保存成功'));
+            }else window.location.replace('{{.FilesURL}}?path='+encodeURIComponent('{{.CurrentDir}}'));
         }).catch(function (error) {
             saveButton.removeAttribute('data-kt-indicator');
             saveButton.disabled = false;
@@ -247,6 +264,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         } catch (error) {
             editorLoading = false;
             editorStatusError = 'loadError';
+            airEditorReady();
             renderEditorLabels();
             if (originalBytes) $('#text_encoding').off('change').on('change', function () {
                 $(document).trigger('i18nshow');
@@ -256,6 +274,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         let editorState = cm6.createEditorState(content, options);
         cmView = cm6.createEditorView(editorState, document.getElementById("editor"));
         loadedText = cmView.state.doc.toString();
+        airEditorReady();
         editorLoading = false;
         $('#save_button').removeAttr('aria-disabled').removeClass('disabled');
         document.getElementById('text_encoding').dataset.previous = $('#text_encoding').val();

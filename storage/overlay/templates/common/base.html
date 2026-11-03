@@ -851,6 +851,8 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
+<script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>(function(){try{let t=localStorage.getItem('data-bs-theme-mode')||localStorage.getItem('data-bs-theme')||'system';if(t==='system')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';const r=document.documentElement;r.dataset.bsTheme=t;r.style.colorScheme=t;r.style.backgroundColor=t==='dark'?'#101827':'#f4f7fc'}catch{}})();</script><style {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>html[data-bs-theme=dark],html[data-bs-theme=dark] body{background:#101827!important;color-scheme:dark}html[data-bs-theme=light],html[data-bs-theme=light] body{background:#f4f7fc;color-scheme:light}</style>
+
         <script src="{{.StaticURL}}/air-i18n.js?v=20261019-header3"></script>
         <link rel="stylesheet" href="{{.StaticURL}}/air-i18n.css?v=20261017-language-menu1">
         <title></title>
@@ -871,7 +873,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         {{- end}}
         {{- template "commonjs" .CSPNonce }}
         <link href="{{.StaticURL}}/air-admin.css?v=20261016-admin-theme2" rel="stylesheet" type="text/css">
-        <link href="{{.StaticURL}}/nas-ui.css?v=20261021-avatar-rows3" rel="stylesheet" type="text/css">
+        <link href="{{.StaticURL}}/nas-ui.css?v=20261102-drag5" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="/static/air-accounts.css?v=20261018-session15"><script defer src="/static/air-accounts.js?v=20261018-session15"></script>
 <script src="/static/air-auth-theme.js?v=20261021-avatar-theme3"></script>
 </head>
@@ -927,7 +929,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 
                         </div>
                     </div> -->
-                    <div id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="300px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
+                    <div id="kt_app_sidebar" class="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="220px" data-kt-drawer-direction="start" data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
                         <div class="app-sidebar-header flex-column mx-10 pt-8" id="kt_app_sidebar_header">
                             <div class="d-flex flex-stack d-none d-lg-flex mb-13">
                                 <div class="app-sidebar-logo">
@@ -1163,7 +1165,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         </script>
         {{- block "extra_js" .}}{{- end}}
         <script src="{{.StaticURL}}/air-admin.js?v=20261016-en2"></script>
-        <script src="{{.StaticURL}}/nas-ui.js?v=20261021-avatar-rows3"></script>
+        <script src="{{.StaticURL}}/nas-ui.js?v=20261022-drawer-width14"></script>
     </body>
 </html>
 {{- end}}

@@ -207,20 +207,21 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
 {{- end}}
 
 {{- define "extra_js"}}
+<script src="{{.StaticURL}}/air-text-codec.js?v=20261020-encoding1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>let airCurrentDirectory='{{.CurrentDir}}';function airCurrentDir(){return airCurrentDirectory;}{{if .ShareOwner}}window.AirShareNavigationConfig={dirs:'{{.DirsURL}}',files:'{{.FilesURL}}',setPath(path){airCurrentDirectory=encodeURIComponent(path)}};{{end}}</script>
 {{if .ShareOwner}}<script defer src="{{.StaticURL}}/air-share-navigation.js?v=20261018-share-nav1"></script>{{end}}
 {{if not .FileURL}}<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
 setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.isDataTable('#file_manager_list'))return;const table=jQuery('#file_manager_list').DataTable();if(!table.rows({selected:true}).count())table.ajax.reload(null,false);},10000);
 </script>{{end}}
-<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-navigation.js?v=20261016-en2"></script>
+<script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-navigation.js?v=20261103-list-race1"></script>
 <script src="{{.StaticURL}}/air-file-drop.js?v=20261019-drop1"></script>
 <script src="{{.StaticURL}}/air-file-actions.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>window.AirRecycleConfig={csrf:'{{.CSRFToken}}'};</script>
-<script src="{{.StaticURL}}/air-recycle.js?v=20261018-recycle-copy2"></script>
+<script src="{{.StaticURL}}/air-recycle.js?v=20261022-mobile16"></script>
 <script src="{{.StaticURL}}/air-settings.js?v=20261016-en2"></script>
 <script src="{{.StaticURL}}/air-capacity.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261018-i18n-audit1"></script>
-{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261019-progress2"></script>{{end}}
+{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261021-safari1"></script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>AirTransfers.configure({share:{{if .ShareOwner}}true{{else}}false{{end}},manifestURL:'{{if .ShareOwner}}{{.DownloadURL}}{{end}}'.replace(/partial$/,'manifest'),enabled:{{if .FileURL}}true{{else}}false{{end}},owner:{{if .ShareOwner}}'share:{{.DownloadURL}}'{{else}}'{{.LoggedUser.Username}}'{{end}},csrf:'{{.CSRFToken}}',progressURL:'{{.ProfileURL}}'.replace(/\/profile$/,'/download-progress'),pingURL:'{{.PingURL}}'});</script>
 
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.js"></script>
@@ -648,7 +649,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                                     icon_name = "ki-file-right"
                                 }
 
-                                return `<div class="d-flex align-items-center">
+                                return `<div class="air-file-title"><div class="d-flex align-items-center">
                                             <a href="${row['type'] == '2' ? '#' : row['url']}" class="d-inline-flex flex-shrink-0 ${row['type'] == '2' ? 'air-file-name' : ''}" aria-label="${data}">
                                                 <i class="ki-duotone ${icon_name} fs-2x text-primary me-4" aria-hidden="true">
                                                     <i class="path1"></i>
@@ -656,7 +657,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                                                 </i>
                                             </a>
                                             <a href="${row['type'] == '2' ? '#' : row['url']}" class="text-gray-800 text-hover-primary ${row['type'] == '2' ? 'air-file-name' : ''}">${data}</a>
-                                        </div>`
+                                        </div><span class="air-file-mobile-time"><span data-air-i18n>最后修改时间：</span><span data-air-date="${Number(new Date(row.last_modified))}">${row.last_modified?new Date(row.last_modified).toLocaleString(window.AirI18n.language,{year:"numeric",month:"numeric",day:"numeric",hour:"numeric",minute:"numeric"}):""}</span></span></div>`
                             }
                             return data;
                         }
@@ -666,7 +667,8 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                         render: function (data, type) {
                             if (type === 'display') {
                                 if (data || data === 0){
-                                    return fileSizeIEC(data);
+                                    const bytes=Number(data),unit=bytes>=1024**3?3:bytes>=1024**2?2:1;
+                                    return (bytes/1024**unit).toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:2,minimumFractionDigits:bytes>0&&bytes<1024?2:0})+' '+['','KB','MB','GB'][unit];
                                 }
                                 return "";
                             }
@@ -732,9 +734,10 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                                                 </div>`;
                                             break;
                                         case "pdf":
-                                            if (PDFObject.supportsPDFs){
+                                            {
                                                 let view_url = row['url'];
                                                 view_url = view_url.replace('{{.FilesURL}}','{{.ViewPDFURL}}');
+                                                const pdfTarget=new URL(view_url,location.origin);pdfTarget.pathname=pdfTarget.pathname.replace(/\/viewpdf$/,'/getpdf');pdfTarget.searchParams.set('air_raw','1');view_url=pdfTarget.href;
                                                 previewDiv = `<div class="ms-2" data-kt-filemanger-table="view_item">
                                                     <a href="${view_url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-icon btn-light btn-active-light-primary">
                                                         <i class="ki-duotone ki-eye fs-6 m-0">
@@ -750,7 +753,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                                             //{{- if not .ShareUploadBaseURL}}
                                             if (data && (supportedEditExtensions.includes(extension) || supportedEditFilenames.includes(filename.toLowerCase()))){
                                                 previewDiv = `<div class="ms-2" data-kt-filemanger-table="view_item">
-                                                    <a href="${data}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-icon btn-light btn-active-light-primary">
+                                                    <a href="${data}" data-air-inline-preview class="btn btn-sm btn-icon btn-light btn-active-light-primary">
                                                         <i class="ki-duotone ki-eye fs-6 m-0">
                                                             <span class="path1"></span>
                                                             <span class="path2"></span>
@@ -923,7 +926,23 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
             if(selected.length === 1) { e.preventDefault(); renameItem(selected[0].meta); }
         });
         {{end}}
+        function openInlinePreview(url,name){
+            const target=new URL(url,location.origin);if(target.origin!==location.origin)return;
+            target.searchParams.set('air_raw','1');target.searchParams.set('air_frame','1');target.searchParams.set('air_editor_only','1');
+            const dialog=document.createElement('dialog');dialog.className='air-inline-preview air-preview-loading';
+            const loading=document.createElement('div');loading.className='air-inline-loading';loading.setAttribute('role','status');loading.textContent=window.AirI18n.t('加载中…');
+            const header=document.createElement('header'),title=document.createElement('strong'),close=document.createElement('button'),view=document.createElement('iframe');
+            title.textContent=name;close.type='button';close.textContent='×';close.setAttribute('aria-label',window.AirI18n.t('关闭'));
+            const reveal=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{if(dialog.isConnected){dialog.classList.remove('air-preview-loading');loading.remove()}}));
+            const ready=event=>{if(event.source===view.contentWindow&&event.origin===location.origin&&event.data?.type==='air-editor-ready')reveal()};window.addEventListener('message',ready);
+            view.onload=()=>{try{if(view.contentDocument?.getElementById('editor')&&!view.contentWindow.cmView&&!view.contentDocument.documentElement.hasAttribute('data-air-preview-ready'))return}catch{}reveal()};
+            view.title=name;view.style.colorScheme=document.documentElement.dataset.bsTheme==='dark'?'dark':'light';view.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms');view.src=target.href;
+            const finish=()=>{try{if(view.contentWindow.airEditorHasChanges?.()&&!confirm(window.AirI18n.t('有未保存的修改，确定关闭？')))return}catch{}window.removeEventListener('message',ready);view.onload=null;view.src='about:blank';dialog.close();dialog.remove()};close.onclick=finish;dialog.addEventListener('cancel',event=>{event.preventDefault();finish()});
+            header.append(title,close);dialog.append(header,view,loading);document.body.append(dialog);dialog.showModal();
+        }
         function handleRowActions() {
+            document.querySelectorAll('[data-air-inline-preview]').forEach(link=>{link.onclick=event=>{event.preventDefault();const row=dt.row(link.closest('tr')).data();openInlinePreview(link.href,row.name,row.url)}});
+
             $('.air-file-name').off('click.air').on('click.air',function(e){e.preventDefault();const row=dt.row(e.target.closest('tr'));dt.rows().deselect();row.select();dt.draw(false);});
 
             const renameButtons = document.querySelectorAll('[data-kt-filemanager-table-action="rename"]');
@@ -1466,12 +1485,15 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         });
     }
 
-    function doMove() {
+    function doMove(dragItems) {
         $('#errorMsg').addClass("d-none");
-        let items = getMoveOrCopyItems();
+        let items = Array.isArray(dragItems) ? dragItems : getMoveOrCopyItems();
         if (items.length == 0){
             return;
         }
+        const sourceDirectory=decodeURIComponent(airCurrentDir()).replace(/\/$/,'');
+        items=items.filter(item=>!(decodeURIComponent(item.targetDir).replace(/\/$/,'')===sourceDirectory&&item.sourceName===item.targetName));
+        if (!items.length) return;
         items = checkMoveCopyItems(items)
         if (items.length == 0){
             ModalAlert.fire({
@@ -1486,7 +1508,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         }
 
         function showMoveError(status) {
-            KTApp.hidePageLoading();
+            airSetFilesBusy(false);
             let errorMessage = "";
             switch (status) {
                 case 400:
@@ -1512,20 +1534,75 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
         }
 
         let hasError = false;
+        const mergeDirectories = new Set();
+        async function runMoveTask(source,target) {
+            const response=await axios.post('{{.FileActionsURL}}/move?path='+encodeURIComponent(source)+'&target='+encodeURIComponent(target),null,{
+                timeout:15000,headers:{'X-CSRF-TOKEN':'{{.CSRFToken}}'},validateStatus:status=>status===202
+            });
+            const result=await taskStatusWaiter.wait({taskID:response.data.message,delay:500});
+            if(result.status!==200) throw {response:{status:result.status}};
+        }
+        async function mergeMoveDirectory(source,target) {
+            const list=async path=>{
+                const response=await axios.get('{{.DirsURL}}?path='+encodeURIComponent(path),{timeout:15000});
+                if(!Array.isArray(response.data))throw Error('Invalid directory response');
+                return response.data;
+            };
+            const children=await list(source),existing=new Map((await list(target)).map(row=>[getNameFromMeta(row.meta),row]));
+            // Validate type conflicts before moving any children in this directory.
+            for(const child of children){const match=existing.get(getNameFromMeta(child.meta));if(match&&getTypeFromMeta(match.meta)!==getTypeFromMeta(child.meta))throw {response:{status:400}};}
+            for(const child of children){
+                const name=getNameFromMeta(child.meta),from=source.replace(/\/$/,'')+'/'+name,to=target.replace(/\/$/,'')+'/'+name;
+                if(getTypeFromMeta(child.meta)==='1'&&existing.has(name))await mergeMoveDirectory(from,to);
+                else await runMoveTask(from,to);
+            }
+            // Re-read before removing the emptied source; concurrent additions must remain intact.
+            if((await list(source)).length)throw {response:{status:409}};
+            const response=await axios.delete('{{.DirsURL}}?path='+encodeURIComponent(source),{
+                timeout:15000,headers:{'X-CSRF-TOKEN':'{{.CSRFToken}}'},validateStatus:status=>status===202
+            });
+            const result=await taskStatusWaiter.wait({taskID:response.data.message,delay:500});
+            if(result.status!==200)throw {response:{status:result.status}};
+        }
         let index = 0;
 
         clearLoading();
-        KTApp.showPageLoading();
 
-        function moveItem() {
+        async function moveItem() {
             if (index >= items.length || hasError){
                 KTApp.hidePageLoading();
-                if (!hasError){
-                    location.reload();
+                window.AirNavigation?.cache.clear();
+                for(const directory of new Set(items.map(item=>item.targetDir))){
+                    try {
+                        const url='{{.DirsURL}}?path='+directory;
+                        const response=await fetch(url,{cache:'no-store',credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}});
+                        if(!response.ok)continue;
+                        const rows=await response.json();if(!Array.isArray(rows))continue;
+                        // Update the already-rendered destination, including hidden preloaded frames.
+                        const views=new Set([window]);
+                        try{views.add(window.parent);for(const frame of window.parent.document.querySelectorAll('iframe'))views.add(frame.contentWindow);}catch{}
+                        for(const view of views){try{
+                            if(view.document.body?.dataset.airOwner!==document.body.dataset.airOwner)continue;
+                            const $=view.jQuery;if(!$?.fn.dataTable.isDataTable('#file_manager_list'))continue;
+                            const table=$('#file_manager_list').DataTable(),state=table.settings()[0];
+                            if(!state._bInitComplete||(state.jqXHR&&state.jqXHR.readyState!==4))continue;
+                            const target=new URL(table.ajax.url(),location.origin);
+                            if((target.searchParams.get('path')||'/').replace(/\/$/,'')!==decodeURIComponent(directory).replace(/\/$/,''))continue;
+                            table.clear().rows.add(rows).draw(false);
+                        }catch{}}
+                    }catch{}
                 }
+                airReloadFilesContent();
                 return;
             }
             let item = items[index];
+            if (mergeDirectories.has(item.targetName)) {
+                try {
+                    await mergeMoveDirectory(decodeURIComponent(airCurrentDir()).replace(/\/$/,'')+'/'+item.sourceName,decodeURIComponent(item.targetDir).replace(/\/$/,'')+'/'+item.targetName);
+                    index++;moveItem();
+                } catch(error) {showMoveError(error?.response?.status||0);}
+                return;
+            }
             let sourcePath = decodeURIComponent(airCurrentDir());
             if (!sourcePath.endsWith('/')){
                 sourcePath+="/";
@@ -1589,7 +1666,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
             operation: "move",
             files: filesArray,
             path: items[0].targetDir
-        }).then((result)=>{
+        }).then(async (result)=>{
             if (result.error) {
                 hasError = true;
                 let message = "fs.move.err_generic";
@@ -1605,16 +1682,16 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                     }
                 });
             } else if (result.data.length > 0){
-                hasError = true;
-                ModalAlert.fire({
-                text: $.t("fs.move.err_exists"),
-                icon: "warning",
-                confirmButtonText: $.t('general.ok'),
-                customClass: {
-                    confirmButton: "btn btn-primary"
-                }
-            });
+                const confirmed = await ModalAlert.fire({
+                    text: window.AirI18n.t('存在同名项目：')+result.data.map(entry=>entry.name).join('、')+window.AirI18n.t('。是否合并文件夹并覆盖同名文件？目标中独有的内容将保留。'),
+                    icon:'warning',showCancelButton:true,
+                    confirmButtonText:window.AirI18n.t('覆盖'),cancelButtonText:window.AirI18n.t('取消')
+                });
+                if (!confirmed.isConfirmed) return;
+                for (const entry of result.data) if (entry.type==='1') mergeDirectories.add(entry.name);
             }
+            if(hasError)return;
+            airSetFilesBusy(true);
             moveItem();
         });
     }
@@ -1981,18 +2058,121 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
     //{{- end}}
 
     {const back=document.getElementById('air-parent-directory'),current=new URL(location.href).searchParams.get('path')||'/',parts=current.split('/').filter(Boolean);if(parts.length){parts.pop();const target=new URL('{{.FilesURL}}',location.origin);target.searchParams.set('path','/'+parts.join('/'));back.href=target.href;}else{back.setAttribute('aria-disabled','true');back.tabIndex=-1;}}
-    document.getElementById("air-refresh-files").onclick=()=>{window.AirNavigation.cache.clear();$("#file_manager_list").DataTable().ajax.reload(null,false);};
+    document.getElementById("air-refresh-files").onclick=()=>{
+        const previous=document.querySelector('link[href*="/nas-ui.css"]');
+        if(previous){const fresh=previous.cloneNode(),url=new URL(previous.href);url.searchParams.set('v',String(Date.now()));fresh.href=url.href;fresh.onload=()=>previous.remove();fresh.onerror=()=>fresh.remove();previous.after(fresh);}
+        window.AirNavigation.cache.clear();$("#file_manager_list").DataTable().ajax.reload(null,false);
+    };
     {{if .CanAddFiles}}AirFileDrop.install(document.querySelector('.nas-files-card > .card-body'),{upload:uploadFiles,getDirectory:airCurrentDir,translate:value=>window.AirI18n.t(value),onError:error=>ModalAlert.fire({text:error.message,icon:'error'})});{{end}}
+    {{if .CanRename}}{{if not .ShareUploadBaseURL}}
+    (()=>{
+        const table=document.getElementById('file_manager_list');
+        let drag=null,highlight=null,dragPreview=null,dropOutline=null;
+        const dt=()=>$(table).DataTable();
+        const current=()=>decodeURIComponent(airCurrentDir()).replace(/\/$/,'')||'/';
+        const join=(dir,name)=>(dir==='/'?'':dir)+'/'+name;
+        function clear(){highlight?.classList.remove('air-move-drop-target');highlight=null;dropOutline?.remove();dropOutline=null;}
+        function reset(){clear();drag=null;dragPreview?.remove();dragPreview=null;table.classList.remove('air-moving-drag');}
+        function target(event){
+            if(!drag||drag.directory!==current()||table.getAttribute('aria-busy')==='true')return null;
+            const crumb=event.target.closest?.('[data-kt-filemanager-table-nav-bar="base"] a');
+            if(crumb){
+                const url=new URL(crumb.href,location.href),path=(url.searchParams.get('path')||'/').replace(/\/$/,'')||'/';
+                if(url.origin!==location.origin||path===current()||!(path==='/'||current().startsWith(path+'/')))return null;
+                return {node:crumb,path};
+            }
+            const back=event.target.closest?.('#air-parent-directory');
+            if(back&&back.getAttribute('aria-disabled')!=='true')return {node:back,path:current().split('/').slice(0,-1).join('/')||'/'};
+            const row=event.target.closest?.('#file_manager_list tbody tr'),data=row&&dt().row(row).data();
+            if(!data||getTypeFromMeta(data.meta)!=='1')return null;
+            const path=join(current(),getNameFromMeta(data.meta));
+            if(drag.rows.some(item=>{const source=join(drag.directory,getNameFromMeta(item.meta));return path===source||path.startsWith(source+'/')}))return null;
+            return {node:row,path};
+        }
+        function markRows(){dt().rows({page:'current'}).every(function(){const node=this.node();if(node){node.draggable=true;node.querySelectorAll?.('a,img').forEach(child=>child.draggable=false);}});}
+        $(table).on('draw.dt.airMove',markRows);
+        if($.fn.dataTable.isDataTable(table))markRows();
+        table.addEventListener('dragstart',event=>{
+            const row=event.target.closest('tbody tr'),data=row&&dt().row(row).data();
+            if(!data||table.getAttribute('aria-busy')==='true'||event.target.closest('button,input,[data-kt-menu]')){event.preventDefault();return;}
+            const selected=dt().rows({selected:true,search:'applied'}).data().toArray();
+            drag={directory:current(),rows:selected.some(item=>item.meta===data.meta)?selected:[data]};
+            event.dataTransfer.clearData?.();event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('application/x-air-nas-move','1');
+            if(event.dataTransfer.setDragImage){
+                dragPreview?.remove();
+                dragPreview=document.createElement('div');dragPreview.className='air-move-preview';
+                const icon=document.createElement('span');icon.className='air-move-preview-icon';icon.textContent='↗';
+                const label=document.createElement('span');label.className='air-move-preview-name';
+                label.textContent=getNameFromMeta(data.meta);
+                dragPreview.append(icon,label);
+                if(drag.rows.length>1){const count=document.createElement('span');count.className='air-move-preview-count';count.textContent=String(drag.rows.length);dragPreview.append(count);}
+                document.body.append(dragPreview);
+                dragPreview.style.left=(event.clientX+18)+'px';dragPreview.style.top=(event.clientY+18)+'px';
+                const blank=document.createElement('span');blank.style.cssText='position:fixed;left:0;top:0;width:1px;height:1px;pointer-events:none;opacity:0';document.body.append(blank);
+                event.dataTransfer.setDragImage(blank,0,0);setTimeout(()=>blank.remove(),0);
+            }
+            table.classList.add('air-moving-drag');
+        });
+        document.addEventListener('dragover',event=>{
+            if(!drag)return;event.preventDefault();const dest=target(event);clear();event.dataTransfer.dropEffect=dest?'move':'none';
+            if(dragPreview){dragPreview.style.left=Math.min(event.clientX+18,window.innerWidth-dragPreview.offsetWidth-12)+'px';dragPreview.style.top=Math.min(event.clientY+18,window.innerHeight-dragPreview.offsetHeight-12)+'px';}
+            if(dest){highlight=dest.node;highlight.classList.add('air-move-drop-target');
+                if(highlight.getBoundingClientRect){const rect=highlight.getBoundingClientRect();dropOutline=document.createElement('div');dropOutline.className='air-move-outline';Object.assign(dropOutline.style,{left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:rect.height+'px'});document.body.append(dropOutline);}
+            }
+        });
+        document.addEventListener('drop',event=>{
+            if(!drag)return;event.preventDefault();event.stopPropagation();const dest=target(event),source=drag;reset();
+            if(!dest)return;
+            window.AirNavigation?.cache.clear();
+            doMove(source.rows.map(row=>({targetDir:encodeURIComponent(dest.path),sourceName:getNameFromMeta(row.meta),targetName:getNameFromMeta(row.meta)})));
+        },true);
+        document.addEventListener('dragend',reset);
+        window.addEventListener('blur',reset);
+        document.addEventListener('dragleave',event=>{if(!event.relatedTarget)clear();});
+    })();
+    {{end}}{{end}}
     var playerKeepAlive;
 
+    const airOverwriteControl=document.getElementById('air-upload-overwrite');
+    try{airOverwriteControl.checked=localStorage.getItem('air-upload-overwrite')!=='false';}catch{}
+    airOverwriteControl.onchange=()=>{try{localStorage.setItem('air-upload-overwrite',String(airOverwriteControl.checked));}catch{}};
+    let airUploadPreparation=Promise.resolve();
     function uploadFiles(files) {
+        const overwrite=airOverwriteControl.checked, directory=airCurrentDir();
+        const selected=Array.from(files);
+        airUploadPreparation=airUploadPreparation.catch(()=>{}).then(async()=>{
+            if(!selected.length)return;
+            if(!overwrite){
+                const roots=new Map(),reserved=new Set();
+                const pending=window.parent.AirCloudTransfers?.uploadTargets?.()||[];
+                for(const url of pending){const path=new URL(url,location.origin).searchParams.get('path')||'';const base=decodeURIComponent(directory).replace(/\/$/,'')+'/';if(path.startsWith(base))reserved.add(path.slice(base.length).split('/')[0].toLowerCase());}
+                for(const file of selected){
+                    const relative=file.fullPath||file.webkitRelativePath||file.name, parts=relative.replace(/^\//,'').split('/'), original=parts[0];
+                    if(!roots.has(original)){
+                        let candidate=original,index=0;const dot=parts.length===1?original.lastIndexOf('.'):-1,stem=dot>0?original.slice(0,dot):original,extension=dot>0?original.slice(dot):'';
+                        for(;;){
+                            const result=await CheckExist.fire({operation:'upload',files:[candidate],path:directory});
+                            if(result.error)throw Error(window.AirI18n.t('无法检查目标文件，请重新登录或稍后重试。'));
+                            if(!Object.values(result.data).length&&!reserved.has(candidate.toLowerCase()))break;
+                            candidate=stem+' ('+(++index)+')'+extension;
+                        }
+                        roots.set(original,candidate);reserved.add(candidate.toLowerCase());
+                    }
+                    parts[0]=roots.get(original);Object.defineProperty(file,'fullPath',{value:parts.join('/'),configurable:true});
+                }
+            }
+            if(directory!==airCurrentDir())throw Error(window.AirI18n.t('目录已变化，请重新拖入文件。'));
+            startUploadFiles(selected,!overwrite);
+        }).catch(error=>ModalAlert.fire({text:error.message,icon:'error'}));
+    }
+    function startUploadFiles(files, keepBoth) {
         if(window.parent!==window&&window.parent.AirCloudTransfers){
             if(!files.length)return;
             const selected=[],dirs=[];for(const f of files){const name=f.fullPath?f.fullPath.split('/')[0]:f.name;if(!selected.includes(name))selected.push(name);if(f.fullPath&&!dirs.includes(name))dirs.push(name);}
             CheckExist.fire({operation:'upload',files:selected,path:airCurrentDir()}).then(async result=>{
                 if(result.error){ModalAlert.fire({text:window.AirI18n.t("无法检查目标文件，请重新登录或稍后重试。"),icon:'error'});return;}
                 const collisions=[];for(const entry of Object.values(result.data)){if(entry.type==='1'&&!dirs.includes(entry.name)){ModalAlert.fire({text:window.AirI18n.t("目标位置存在同名文件夹，无法覆盖。"),icon:'error'});return;}collisions.push(entry.name);}
-                if(collisions.length){const confirmed=await ModalAlert.fire({text:window.AirI18n.t("存在同名项目：")+collisions.join('、')+window.AirI18n.t("。是否合并文件夹并覆盖同名文件？"),icon:'warning',showCancelButton:true,confirmButtonText:window.AirI18n.t("继续上传"),cancelButtonText:window.AirI18n.t("取消")});if(!confirmed.isConfirmed)return;}
+                if(collisions.length&&!keepBoth){const confirmed=await ModalAlert.fire({text:window.AirI18n.t("存在同名项目：")+collisions.join('、')+window.AirI18n.t("。是否合并文件夹并覆盖同名文件？"),icon:'warning',showCancelButton:true,confirmButtonText:window.AirI18n.t("继续上传"),cancelButtonText:window.AirI18n.t("取消")});if(!confirmed.isConfirmed)return;}
                 window.parent.AirCloudTransfers.enqueueUploads({owner:'{{.LoggedUser.Username}}',files:Array.from(files),uploadBase:'{{.FileURL}}?path='+airCurrentDir(),csrf:'{{.CSRFToken}}'});
                 try{Dropzone.forElement('#upload_files').removeAllFiles();Dropzone.forElement('#upload_files_empty').removeAllFiles();}catch{}
             });
@@ -2167,7 +2347,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 uploadFile();
                 return;
             }
-            if (existingEntries.length > 0) {
+            if (existingEntries.length > 0 && !keepBoth) {
                 ModalAlert.fire({
                     text: $.t('fs.upload.overwrite_text'),
                     items: existingEntries,
@@ -2453,6 +2633,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                 <div class="d-flex flex-wrap gap-2 mb-3"><button id="air-files-picker" type="button" class="btn btn-sm btn-light-primary"><svg class="air-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6M14 2v6h6M12 12v6M9 15h6"/></svg><span data-air-i18n>选择文件</span></button><button id="air-folder-picker" type="button" class="btn btn-sm btn-light-primary"><svg class="air-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span data-air-i18n>选择文件夹</span></button><button id="air-queue-clear" type="button" class="btn btn-sm btn-light"><svg class="air-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span data-air-i18n>清空队列</span></button></div>
                 <input id="air-folder-input" type="file" webkitdirectory multiple hidden>
                 <p class="form-text mb-2"><span data-air-i18n>可多选文件；上传文件夹会保留子目录结构。空文件夹不会被浏览器选择器读取。</span></p>
+    <div class="mb-4"><label class="form-check form-check-inline"><input id="air-upload-overwrite" class="form-check-input" type="checkbox" checked><span class="form-check-label" data-air-i18n>覆盖同名文件</span></label><span class="text-muted fs-7" data-air-i18n>不覆盖时自动添加后缀，保留已有文件。</span></div>
                 <div id="air-upload-queue" class="text-muted fs-7 mb-3" role="status"><span data-air-i18n>尚未选择文件</span></div>
 
                 <form id="upload_files_form" action="{{.FilesURL}}?path={{.CurrentDir}}" method="POST" enctype="multipart/form-data">

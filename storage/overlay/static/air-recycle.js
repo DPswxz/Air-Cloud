@@ -10,7 +10,7 @@ function init(){
  for(const [action,label]of [['restore',window.AirI18n.t("恢复")],['purge',window.AirI18n.t("彻底删除")]]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.action=action;button.setAttribute('role','menuitem');if(action==='purge')button.className='danger';button.onclick=()=>{hideMenu();runSelection(action)};menu.append(button)}
  let items=[],selected=new Set(),anchor=null,busy=false,loading=false,refreshTimer,lastSnapshot='',refreshEpoch=0;
  const folders=new Map();
- const format=n=>{if(!n)return '0 B';const units=['B','KB','MB','GB','TB'];const i=Math.min(4,Math.floor(Math.log(n)/Math.log(1024)));return (n/1024**i).toFixed(i?1:0)+' '+units[i]};
+ const format=n=>{const bytes=Math.max(0,Number(n)||0),i=bytes>=1024**3?3:bytes>=1024**2?2:1;return (bytes/1024**i).toLocaleString('en-US',{useGrouping:false,maximumFractionDigits:2,minimumFractionDigits:bytes>0&&bytes<1024?2:0})+' '+['','KB','MB','GB'][i]};
  const date=n=>new Date(n).toLocaleString(window.AirI18n.language,{hour12:false});
  function hideMenu(){menu.hidden=true}
  function syncSelection(){
@@ -38,7 +38,7 @@ function init(){
   for(const item of items){const row=document.createElement('tr');row.dataset.id=item.id;row.tabIndex=0;row.setAttribute('aria-selected',String(selected.has(item.id)));
    const check=cell(row,'','air-recycle-select-cell'),input=document.createElement('input');input.type='checkbox';input.setAttribute('data-air-i18n-skip','');input.className='form-check-input';input.setAttribute('aria-label',window.AirI18n.t("选择 ")+item.name);input.onclick=event=>{event.stopPropagation();choose(item.id,event,true)};const wrapper=document.createElement('div');wrapper.className='form-check form-check-sm form-check-custom form-check-solid';wrapper.append(input);check.append(wrapper);
    const nameCell=cell(row,'','air-recycle-name-cell'),name=document.createElement('div');name.className='air-recycle-name';if(item.directory)name.append(toggleButton(item,'',item.name));else{const spacer=document.createElement('span');spacer.className='air-recycle-toggle-spacer';name.append(spacer)}const label=document.createElement('span');label.textContent=item.name;label.title=item.name;name.append(fileIcon(item.directory),label);nameCell.append(name);if(item.directory)nameCell.append(renderTree(item,''));
-   cell(row,item.original,'air-recycle-path-cell');cell(row,format(item.bytes),'air-recycle-size-cell');cell(row,date(item.deleted_at),'air-recycle-date-cell');
+   cell(row,item.original,'air-recycle-path-cell').title=item.original;cell(row,format(item.bytes),'air-recycle-size-cell');cell(row,date(item.deleted_at),'air-recycle-date-cell');
    row.onclick=()=>hideMenu();
    row.oncontextmenu=event=>{if(busy)return;event.preventDefault();if(!selected.has(item.id)){hideMenu();return}menu.hidden=false;menu.style.left=Math.max(4,Math.min(event.clientX,innerWidth-menu.offsetWidth-8))+'px';menu.style.top=Math.max(4,Math.min(event.clientY,innerHeight-menu.offsetHeight-8))+'px';menu.querySelector('button').focus()};
    row.onkeydown=event=>{if(event.target!==row)return;if(event.key==='ContextMenu'||event.key==='F10'&&event.shiftKey){event.preventDefault();const rect=row.getBoundingClientRect();row.oncontextmenu({preventDefault(){},clientX:rect.left+40,clientY:rect.top+20})}};

@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+<script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>(function(){try{let t=localStorage.getItem('data-bs-theme-mode')||localStorage.getItem('data-bs-theme')||'system';if(t==='system')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';const r=document.documentElement;r.dataset.bsTheme=t;r.style.colorScheme=t;r.style.backgroundColor=t==='dark'?'#101827':'#f4f7fc'}catch{}})();</script><style {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>html[data-bs-theme=dark],html[data-bs-theme=dark] body{background:#101827!important;color-scheme:dark}html[data-bs-theme=light],html[data-bs-theme=light] body{background:#f4f7fc;color-scheme:light}</style>
+<script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
+(function(){try{let theme=window.parent!==window?window.parent.document.documentElement.getAttribute('data-bs-theme'):null;if(!theme){theme=localStorage.getItem('data-bs-theme-mode')||localStorage.getItem('data-bs-theme')||'system';if(theme==='system')theme=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}const root=document.documentElement;root.setAttribute('data-bs-theme',theme);root.style.colorScheme=theme;root.style.backgroundColor=theme==='dark'?'#172131':'#ffffff'}catch{}})();
+</script>
         <script src="{{.StaticURL}}/air-i18n.js?v=20261019-header3"></script>
         <link rel="stylesheet" href="{{.StaticURL}}/air-i18n.css?v=20261017-language-menu1">
         <script src="{{.StaticURL}}/air-auth-theme.js?v=20261021-avatar-theme3"></script>
@@ -15,7 +19,7 @@
         {{end}}
     </head>
 
-<body style="margin:0"><main id="air-pdf-preview" style="height:calc(100dvh - 56px)"></main>
+<body style="margin:0;background:inherit;color-scheme:inherit"><main id="air-pdf-preview" style="height:calc(100dvh - 56px)"></main>
     <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/vendor/pdfobject/pdfobject.min.js"></script>
     <script type="text/javascript" {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}}>
         PDFObject.embed("{{.URL}}", document.getElementById("air-pdf-preview"));
