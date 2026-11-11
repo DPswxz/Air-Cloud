@@ -14,6 +14,21 @@ function create({repo=repository,fetchFile=(...args)=>fetch(...args),translate=s
   const parts=task.relative.split('/'),leaf=parts.pop();if(!leaf||leaf==='.'||leaf==='..'||leaf.includes('\\'))throw error('文件路径无效');
   const handle=await (await directoryAt(task.sink,parts)).getFileHandle(leaf,{create:!task.committed});
   const file=await handle.getFile();
+  async function openWriter(keepExistingData){
+   for(let attempt=0;;attempt++){
+    signal.throwIfAborted();
+    try{
+     return await handle.createWritable({keepExistingData});
+    }catch(e){
+     signal.throwIfAborted();
+     const retryable=['UnknownError','NoModificationAllowedError','InvalidStateError'].includes(e.name)
+      || /(?:could not|unable to|failed to) create (?:a |the )?file|无法创建文件/i.test(e.message||'');
+     if(!retryable)throw e;
+     if(attempt===2)throw error('无法打开下载文件进行写入，请关闭正在使用该文件的程序，并检查保存位置的写入权限和剩余空间后继续。');
+     await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));
+    }
+   }
+  }
   if(task.committed&&file.size<task.committed)throw error('本地文件已变化，请重新下载。');
   let offset=task.committed||0;task.bytes=offset;task.networkBytes=0;task.rateState=null;task.verifying=offset>0;render();
   const url=new URL(task.url);url.searchParams.set('air_raw','1');
@@ -25,7 +40,7 @@ function create({repo=repository,fetchFile=(...args)=>fetch(...args),translate=s
   while(checked<offset){const bytes=await rangeBlock(checked,Math.min(offset-1,checked+CHUNK-1)),hash=await digest(bytes);if(!bytes.length)throw error('源文件已变化或不支持续传，请重新下载。');if(await digest(await file.slice(checked,checked+bytes.length).arrayBuffer())!==hash)throw error('本地文件已变化，请重新下载。');(task.checks||= []).push({start:checked,length:bytes.length,hash});checked+=bytes.length;await save(task);progress(checked)}
   task.verifying=false;task.etaEstimate=null;task.rateSamples=[];task.rateState=null;task.currentRate=0;render();
 
-  async function commit(data){task.writing=true;render();try{if(signal.aborted)throw new DOMException('Aborted','AbortError');const hash=await digest(data);let writer;try{writer=await handle.createWritable({keepExistingData:offset>0});await writer.seek(offset);await writer.write(data);await writer.truncate(offset+data.length);await writer.close();writer=null}catch(e){if(writer)try{await writer.abort()}catch{}throw e}(task.checks||= []).push({start:offset,length:data.length,hash});offset+=data.length;const local=await handle.getFile();task.committed=offset;task.localSize=local.size;task.localModified=local.lastModified;await save(task);task.bytes=Math.max(task.bytes||0,offset);render()}finally{task.writing=false;render()}}
+  async function commit(data){task.writing=true;render();try{if(signal.aborted)throw new DOMException('Aborted','AbortError');const hash=await digest(data);let writer;try{writer=await openWriter(offset>0);signal.throwIfAborted();await writer.seek(offset);await writer.write(data);await writer.truncate(offset+data.length);await writer.close();writer=null}catch(e){if(writer)try{await writer.abort()}catch{}throw e}(task.checks||= []).push({start:offset,length:data.length,hash});offset+=data.length;const local=await handle.getFile();task.committed=offset;task.localSize=local.size;task.localModified=local.lastModified;await save(task);task.bytes=Math.max(task.bytes||0,offset);render()}finally{task.writing=false;render()}}
   async function rangeBlock(start,end){
    for(let attempt=0;attempt<3;attempt++){
     if(signal.aborted)throw new DOMException('Aborted','AbortError');
@@ -54,7 +69,7 @@ function create({repo=repository,fetchFile=(...args)=>fetch(...args),translate=s
   try{
    if(offset>0&&offset===task.total){await rangeBlock(0,0);await repo.remove(task.resumeKey);task.bytes=task.total;return}
    let pending=rangeBlock(offset,offset+CHUNK-1);pending.catch(()=>{});
-   do{const bytes=await pending;if(!bytes.length){const writer=await handle.createWritable();await writer.close();break}const next=offset+bytes.length;pending=next<task.total?rangeBlock(next,next+CHUNK-1):null;pending?.catch(()=>{});await commit(bytes)}while(offset<task.total);
+   do{const bytes=await pending;if(!bytes.length){const writer=await openWriter(false);await writer.close();break}const next=offset+bytes.length;pending=next<task.total?rangeBlock(next,next+CHUNK-1):null;pending?.catch(()=>{});await commit(bytes)}while(offset<task.total);
    if(offset!==task.total)throw error('下载连接中断，已保存进度，可继续。');await repo.remove(task.resumeKey);task.bytes=task.total;
   }catch(e){task.bytes=task.committed||0;if(task.removed&&!task.preserveResume)await repo.remove(task.resumeKey);throw e}
 

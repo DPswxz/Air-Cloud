@@ -59,6 +59,8 @@ const overlay=path.join(storage,'overlay');
 const assets=new Set(walk(overlay).map(p=>path.relative(overlay,p)));
 assets.add(path.join('static','air-text-codec.js'));
 assets.add(path.join('templates','webclient','editfile.html'));
+assets.add(path.join('templates','webclient','sharelogin.html'));
+assets.add(path.join('templates','webadmin','configs.html'));
 for(const file of walk(path.join(config.liveRoot,'app/static/nas-avatars')))assets.add(path.relative(path.join(config.liveRoot,'app'),file));
 for(const rel of assets){const live=path.join(config.liveRoot,'app',rel);if(fs.existsSync(live))updates.push([path.join(overlay,rel),portableAsset(rel,fs.readFileSync(live))])}
 let patch='';

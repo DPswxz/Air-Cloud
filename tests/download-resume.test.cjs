@@ -8,13 +8,13 @@ test('a browser-rejected filename identifies the destination and retains its che
  assert.equal(task.bytes,42);assert.equal(records.size,1);
 });
 function fixture(payload,{fail=false,tag='"source-1"'}={}){
- const records=new Map(),requests=[];let disk=Buffer.alloc(0),modified=1,stall=false,shortOnce=false,statusOnce=0,overlapped=false;
- const handle={async getFile(){return {size:disk.length,lastModified:modified,slice(start,end){return new Blob([disk.subarray(start,end)])}}},async createWritable({keepExistingData=false}={}){if(!disk.length&&requests.includes(CHUNK))overlapped=true;let pending=keepExistingData?Buffer.from(disk):Buffer.alloc(0),position=0;return {async seek(n){position=n},async write(data){const next=Buffer.alloc(Math.max(pending.length,position+data.length));pending.copy(next);Buffer.from(data).copy(next,position);pending=next;position+=data.length},async truncate(size){pending=pending.subarray(0,size)},async close(){disk=pending;modified++},async abort(){}}}};
+ const records=new Map(),requests=[];let disk=Buffer.alloc(0),modified=1,stall=false,shortOnce=false,statusOnce=0,overlapped=false,writerFailures=0;
+ const handle={async getFile(){return {size:disk.length,lastModified:modified,slice(start,end){return new Blob([disk.subarray(start,end)])}}},async createWritable({keepExistingData=false}={}){if(keepExistingData&&writerFailures>0){writerFailures--;throw new DOMException("Could not create file","UnknownError")}if(!disk.length&&requests.includes(CHUNK))overlapped=true;let pending=keepExistingData?Buffer.from(disk):Buffer.alloc(0),position=0;return {async seek(n){position=n},async write(data){const next=Buffer.alloc(Math.max(pending.length,position+data.length));pending.copy(next);Buffer.from(data).copy(next,position);pending=next;position+=data.length},async truncate(size){pending=pending.subarray(0,size)},async close(){disk=pending;modified++},async abort(){}}}};
  const sink={async getFileHandle(){return handle}},repo={async put(value){records.set(value.key,{...value,checks:(value.checks||[]).map(c=>({...c}))})},async remove(key){records.delete(key)},async list(){return [...records.values()]}};
  const engine=create({repo,verificationTimeout:20,async fetchFile(url,options){assert.equal(options.cache,'no-store');const forcedStatus=statusOnce;statusOnce=0;if(stall)return new Promise(()=>{});const offset=options.headers.Range?Number(options.headers.Range.match(/\d+/)[0]):0,end=options.headers.Range?.split('-')[1]?Math.min(payload.length,Number(options.headers.Range.split('-')[1])+1):payload.length;requests.push(offset);let cursor=offset;const headers=new Map([['content-disposition','attachment'],['content-length',String(end-offset)],['etag',tag]]);if(options.headers.Range&&payload.length)headers.set('content-range',`bytes ${offset}-${end-1}/${payload.length}`);return {ok:true,status:forcedStatus||(options.headers.Range?(payload.length?206:416):200),headers,body:{async cancel(){},getReader(){return {async read(){if(shortOnce&&offset>=CHUNK){shortOnce=false;return {done:true}}if(fail&&offset>=CHUNK)throw Error('network lost');if(cursor===end)return {done:true};const value=payload.subarray(cursor,Math.min(end,cursor+CHUNK));cursor+=value.length;return {done:false,value}},async cancel(){}}}}}}});
  const task={owner:'a',name:'file.bin',relative:'file.bin',url:'https://nas.test/file',total:payload.length,bytes:0,sink,created:1};
  const run=(task,render=()=>{})=>engine.run(task,{directoryAt:async()=>sink,signal:new AbortController().signal,render});
- return {task,engine,run,records,requests,get overlap(){return overlapped},get disk(){return disk},setStatusOnce(value){statusOnce=value},setShortOnce(value){shortOnce=value},setStall(value){stall=value},setFail(value){fail=value},setTag(value){tag=value},changeLocal(){modified++;disk[0]^=255},touch(){modified++},addTail(){disk=Buffer.concat([disk,Buffer.alloc(123)]);modified++}};
+ return {task,engine,run,records,requests,get overlap(){return overlapped},get disk(){return disk},setStatusOnce(value){statusOnce=value},setShortOnce(value){shortOnce=value},setStall(value){stall=value},setFail(value){fail=value},setWriterFailures(value){writerFailures=value},setTag(value){tag=value},changeLocal(){modified++;disk[0]^=255},touch(){modified++},addTail(){disk=Buffer.concat([disk,Buffer.alloc(123)]);modified++}};
 }
 test('network interruption persists committed bytes and a restored task requests only the remainder',async()=>{
  const payload=Buffer.alloc(CHUNK+321,67),f=fixture(payload,{fail:true});await f.engine.prepare(f.task);await assert.rejects(f.run(f.task),/network lost/);
@@ -49,4 +49,19 @@ test('verification reports progress and a stalled legacy check times out without
  const f=fixture(Buffer.alloc(CHUNK+321,14),{fail:true});await f.engine.prepare(f.task);await assert.rejects(f.run(f.task));const saved=(await f.engine.list('a'))[0];delete saved.checks;f.setFail(false);f.setStall(true);
  await assert.rejects(f.run({...saved,resumeKey:saved.key,committed:saved.offset}),/校验长时间无响应/);assert.equal((await f.engine.list('a'))[0].offset,CHUNK);
  f.setStall(false);const progress=[];await f.run({...saved,resumeKey:saved.key,committed:saved.offset},()=>{if(saved.sink)progress.push(true)});assert.ok(progress.length>2);assert.equal(f.records.size,0);
+});
+
+test('a local writer creation failure retains the checkpoint and a later resume can recover',async()=>{
+ const payload=Buffer.alloc(CHUNK+321,67),f=fixture(payload,{fail:true});
+ await f.engine.prepare(f.task);
+ await assert.rejects(f.run(f.task),/network lost/);
+ f.setFail(false);
+ f.setWriterFailures(3);
+ await assert.rejects(f.run(f.task),/无法打开下载文件进行写入/);
+ assert.equal(f.disk.length,CHUNK);
+ assert.equal((await f.engine.list('a'))[0].offset,CHUNK);
+ f.setWriterFailures(1);
+ await f.run(f.task);
+ assert.deepEqual(f.disk,payload);
+ assert.equal(f.records.size,0);
 });

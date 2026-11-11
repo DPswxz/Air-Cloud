@@ -1,0 +1,120 @@
+<!--
+Copyright (C) 2023 Nicola Murino
+
+This WebUI uses the KeenThemes Bootstrap Templates:
+
+https://keenthemes.com/bootstrap-templates
+
+KeenThemes HTML/CSS/JS components are allowed for use only within the
+SFTPGo product and restricted to be used in a resealable HTML template
+that can compete with KeenThemes products anyhow.
+
+This WebUI is allowed for use only within the SFTPGo product and
+therefore cannot be used in derivative works/products without an
+explicit grant from the SFTPGo Team (support@sftpgo.com).
+-->
+{{- template "baselogin" .}}
+
+{{- define "content"}}
+<style {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
+    .bg-body:has(> .air-share-unlock) {
+        --share-card: #fff;
+        --share-border: #e4eaf3;
+        --share-text: #20314a;
+        --share-muted: #66758b;
+        --share-field: #f6f8fc;
+        width: min(100%, 400px) !important;
+        padding: clamp(20px, 4vw, 30px) !important;
+        background: var(--share-card) !important;
+        border: 1px solid var(--share-border);
+        border-radius: 16px !important;
+        color: var(--share-text);
+    }
+    [data-bs-theme="dark"] .bg-body:has(> .air-share-unlock) {
+        --share-card: #172131;
+        --share-border: #2a374c;
+        --share-text: #e4ebf7;
+        --share-muted: #a4b6cd;
+        --share-field: #101827;
+    }
+    .air-share-unlock-brand, .air-share-unlock-owner {display: flex; align-items: center; gap: 10px}
+    .air-share-unlock-brand {margin-bottom: 18px}
+    .air-share-unlock-brand img, .air-share-unlock-owner img {flex: none; object-fit: cover}
+    .air-share-unlock-brand img {border-radius: 10px}
+    .air-share-unlock-brand h1 {margin: 0; font-size: 20px; color: var(--share-text)}
+    .air-share-unlock-owner {margin-bottom: 16px; color: var(--share-muted); overflow-wrap: anywhere}
+    .air-share-unlock-owner strong {color: var(--share-text)}
+    .air-share-unlock .form-control {
+        min-height: 44px;
+        padding: 9px 48px 9px 12px;
+        background: var(--share-field);
+        border: 1px solid var(--share-border);
+        border-radius: 9px;
+        color: var(--share-text);
+        font-size: 16px;
+    }
+    .air-share-unlock .form-control::placeholder {color: var(--share-muted)}
+    .air-share-unlock .form-control:focus {border-color: #659cff; box-shadow: 0 0 0 3px #3478f625}
+    .air-share-unlock-toggle {position: absolute; inset-inline-end: 4px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px}
+    .air-share-unlock .air-share-unlock-submit {min-height: 44px; margin-top: 12px; border-radius: 9px}
+    .air-share-unlock-footer {margin-top: 14px; gap: 8px; flex-wrap: wrap}
+</style>
+<form class="form air-share-unlock" id="sign_in_form" action="{{.CurrentURL}}" method="POST">
+    <div class="air-share-unlock-brand">
+        <img src="{{.StaticURL}}{{.Branding.LogoPath}}" alt="" width="40" height="40">
+        <h1>{{.Branding.ShortName}}</h1>
+    </div>
+    {{- if .ShareOwner}}
+    <div class="air-share-unlock-owner">
+        <img class="rounded-circle" src="{{.ShareOwnerAvatar}}" alt="" width="28" height="28">
+        <span><span data-air-i18n>分享人：</span><strong>{{.ShareOwner}}</strong></span>
+    </div>
+    {{- end}}
+    {{- template "errmsg" .Error}}
+    <div class="fv-row">
+        <div class="position-relative" data-password-control="container">
+            <input data-air-i18n-attrs aria-label="提取码" data-password-control="input" class="form-control"
+                type="password" name="share_password" placeholder="请输入提取码" spellcheck="false" autocomplete="off" required />
+            <button type="button" class="btn btn-sm btn-icon air-share-unlock-toggle" data-password-control="visibility" data-air-i18n-attrs aria-label="显示或隐藏密码">
+                <i class="ki-duotone ki-eye-slash fs-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                    <span class="path3"></span>
+                    <span class="path4"></span>
+                </i>
+                <i class="ki-duotone ki-eye d-none fs-1">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                    <span class="path3"></span>
+                </i>
+            </button>
+        </div>
+    </div>
+    <div class="text-center">
+        <input type="hidden" name="_form_token" value="{{.CSRFToken}}">
+        <button type="submit" id="sign_in_submit" class="btn btn-primary w-100 air-share-unlock-submit">
+            <span data-air-i18n class="indicator-label">查看分享</span>
+            <span data-i18n="general.wait" class="indicator-progress">
+                Please wait...
+                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+            </span>
+        </button>
+    </div>
+</form>
+{{- if or (gt (len .Languages) 1) (and .Branding.DisclaimerName .Branding.DisclaimerPath)}}
+<hr>
+{{- end}}
+<div class="d-flex flex-stack air-share-unlock-footer">
+    <div class="me-10">
+        <select id="languageSwitcher" name="language" class="form-select form-select-solid form-select-sm" data-control="i18n-select2" data-hide-search="true">
+        </select>
+    </div>
+    <div class="d-flex fw-semibold text-primary">
+        {{- if and .Branding.DisclaimerName .Branding.DisclaimerPath}}
+        <a href="{{.Branding.DisclaimerPath}}" target="_blank" rel="noopener noreferrer" class="px-2">
+            <span data-i18n="custom.disclaimer_webclient">{{.Branding.DisclaimerName}}</span>
+        </a>
+        {{- end}}
+    </div>
+</div>
+{{- end}}

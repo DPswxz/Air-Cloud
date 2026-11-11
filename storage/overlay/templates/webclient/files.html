@@ -221,7 +221,7 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
 <script src="{{.StaticURL}}/air-settings.js?v=20261016-en2"></script>
 <script src="{{.StaticURL}}/air-capacity.js?v=20261018-i18n-audit1"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}} src="{{.StaticURL}}/air-transfers.js?v=20261018-i18n-audit1"></script>
-{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261021-safari1"></script>{{end}}
+{{if .ShareOwner}}<script src="{{.StaticURL}}/air-background.js?v=20261111-resume7"></script>{{end}}
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>AirTransfers.configure({share:{{if .ShareOwner}}true{{else}}false{{end}},manifestURL:'{{if .ShareOwner}}{{.DownloadURL}}{{end}}'.replace(/partial$/,'manifest'),enabled:{{if .FileURL}}true{{else}}false{{end}},owner:{{if .ShareOwner}}'share:{{.DownloadURL}}'{{else}}'{{.LoggedUser.Username}}'{{end}},csrf:'{{.CSRFToken}}',progressURL:'{{.ProfileURL}}'.replace(/\/profile$/,'/download-progress'),pingURL:'{{.PingURL}}'});</script>
 
 <script {{- if .CSPNonce}} nonce="{{.CSPNonce}}"{{- end}} src="{{.StaticURL}}/assets/plugins/custom/datatables/datatables.bundle.js"></script>
@@ -694,7 +694,17 @@ setInterval(function(){if(document.hidden||!window.jQuery||!jQuery.fn.dataTable.
                         render: function (data, type, row) {
                             if (type === 'display') {
                                 let previewDiv = "";
-                                if (row["type"] == "2") {
+                                if (row.preview_url) {
+                                    const link = document.createElement('a');
+                                    link.href = row.preview_url;
+                                    link.target = '_blank';
+                                    link.rel = 'noopener';
+                                    link.className = 'btn btn-sm btn-icon btn-light btn-active-light-primary air-share-preview-icon';
+                                    link.title = window.AirI18n.t('预览');
+                                    link.setAttribute('aria-label', link.title);
+                                    link.innerHTML = '<i class="ki-duotone ki-eye fs-6 m-0" aria-hidden="true"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>';
+                                    previewDiv = '<div class="ms-2">' + link.outerHTML + '</div>';
+                                } else if (row["type"] == "2") {
                                     let filename = escapeHTML(row["name"]);
                                     let extension = filename.slice((filename.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
                                     switch (extension) {

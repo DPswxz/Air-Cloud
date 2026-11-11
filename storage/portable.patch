@@ -196,7 +196,7 @@ index 02e1ee1..87cf4ae 100644
  		logger.Warn(logSender, middleware.GetReqID(r.Context()), "unable to render password reset template: %v", err)
  		return util.NewGenericError("Unable to render password reset template")
 diff --git a/internal/httpd/auth_utils.go b/internal/httpd/auth_utils.go
-index ab2d283..326569a 100644
+index ab2d283..0c56d72 100644
 --- a/internal/httpd/auth_utils.go
 +++ b/internal/httpd/auth_utils.go
 @@ -19,6 +19,7 @@ import (
@@ -230,12 +230,15 @@ index ab2d283..326569a 100644
  	user.Filters.WebClient = claims.Permissions
  	user.Role = claims.Role
  	return user
-@@ -402,6 +410,14 @@ func validateIPForToken(token *jwt.Claims, ip string) error {
+@@ -402,6 +410,17 @@ func validateIPForToken(token *jwt.Claims, ip string) error {
  }
  
  func checkTokenSignature(r *http.Request, token *jwt.Claims) error {
 +	// Privileged NAS sessions always track the administrator's current permissions and signature.
 +	if hasUserAudience(token) && strings.HasPrefix(token.Username, "__nas_admin_view_") {
++		if !nasAdminFilesEnabled() {
++			return errInvalidToken
++		}
 +		user, err := dataprovider.UserExists(token.Username, "")
 +		if err != nil || user.Status != 1 || !user.IsNASAdminFileView() || user.GetSignature() == "" || user.GetSignature() != token.Subject {
 +			return errInvalidToken
@@ -271,7 +274,7 @@ index f1512c8..fef3c1f 100644
  			if err == nil {
  				dataprovider.UpdateUserFolderQuota(&vfolder, &c.User, 0, -fileSize, false)
 diff --git a/internal/httpd/server.go b/internal/httpd/server.go
-index 62d6f80..4721cc9 100644
+index 62d6f80..1fac0d6 100644
 --- a/internal/httpd/server.go
 +++ b/internal/httpd/server.go
 @@ -270,7 +270,12 @@ func (s *httpdServer) handleWebClientLoginPost(w http.ResponseWriter, r *http.Re
@@ -298,17 +301,18 @@ index 62d6f80..4721cc9 100644
  			s.router.With(jwt.Verify(s.csrfTokenAuth, jwt.TokenFromCookie)).
  				Post(webClientLoginPath, s.handleWebClientLoginPost)
  			s.router.Get(webClientForgotPwdPath, s.handleWebClientForgotPwd)
-@@ -1615,6 +1623,9 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1615,6 +1623,10 @@ func (s *httpdServer) setupWebClientRoutes() {
  		s.router.Get(webClientPubSharesPath+"/{id}/browse", s.handleShareGetFiles)
  		s.router.Post(webClientPubSharesPath+"/{id}/browse/exist", s.handleClientShareCheckExist)
  		s.router.Get(webClientPubSharesPath+"/{id}/download", s.handleClientSharedFile)
 +		s.router.Get(webClientPubSharesPath+"/{id}/view", s.handleAirSharePage)
++		s.router.Get(webClientPubSharesPath+"/{id}/preview", s.handleNASSharePreview)
 +		s.router.Post(webClientPubSharesPath+"/{id}/manifest", s.handleNASShareDownloadManifest)
 + s.router.Get(webClientPubSharesPath+"/{id}/manifest", s.handleNASShareDownloadManifest)
  		s.router.Get(webClientPubSharesPath+"/{id}/upload", s.handleClientUploadToShare)
  		s.router.With(compressor.Handler).Get(webClientPubSharesPath+"/{id}/dirs", s.handleShareGetDirContents)
  		s.router.Post(webClientPubSharesPath+"/{id}", s.uploadFilesToShare)
-@@ -1628,9 +1639,14 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1628,9 +1640,14 @@ func (s *httpdServer) setupWebClientRoutes() {
  			}
  			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
  			router.Use(jwtAuthenticatorWebClient)
@@ -324,7 +328,7 @@ index 62d6f80..4721cc9 100644
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientViewPDFPath, s.handleClientViewPDF)
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientGetPDFPath, s.handleClientGetPDF)
  			router.With(s.checkAuthRequirements, s.refreshCookie, s.verifyCSRFHeader).Get(webClientFilePath, getUserFile)
-@@ -1645,6 +1661,9 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1645,6 +1662,9 @@ func (s *httpdServer) setupWebClientRoutes() {
  				Delete(webClientFilesPath, deleteUserFile)
  			router.With(s.checkAuthRequirements, compressor.Handler, s.refreshCookie).
  				Get(webClientDirsPath, s.handleClientGetDirContents)
@@ -334,7 +338,7 @@ index 62d6f80..4721cc9 100644
  			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
  				Post(webClientDirsPath, createUserDir)
  			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
-@@ -1654,7 +1673,7 @@ func (s *httpdServer) setupWebClientRoutes() {
+@@ -1654,7 +1674,7 @@ func (s *httpdServer) setupWebClientRoutes() {
  			router.With(s.checkAuthRequirements, s.checkHTTPUserPerm(sdk.WebClientWriteDisabled), s.verifyCSRFHeader).
  				Post(webClientFileActionsPath+"/copy", taskCopyFsEntry)
  			router.With(s.checkAuthRequirements, s.refreshCookie).
@@ -343,7 +347,7 @@ index 62d6f80..4721cc9 100644
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientPingPath, handlePingRequest)
  			router.With(s.checkAuthRequirements, s.refreshCookie).Get(webClientProfilePath,
  				s.handleClientGetProfile)
-@@ -1747,6 +1766,9 @@ func (s *httpdServer) setupWebAdminRoutes() {
+@@ -1747,6 +1767,9 @@ func (s *httpdServer) setupWebAdminRoutes() {
  			}
  			router.Use(jwt.Verify(s.tokenAuth, oidcTokenFromContext, jwt.TokenFromCookie))
  			router.Use(jwtAuthenticatorWebAdmin)
@@ -354,10 +358,18 @@ index 62d6f80..4721cc9 100644
  			router.Get(webLogoutPath, s.handleWebAdminLogout)
  			router.With(s.refreshCookie, s.checkAuthRequirements, s.requireBuiltinLogin).Get(
 diff --git a/internal/httpd/webadmin.go b/internal/httpd/webadmin.go
-index cf063d6..f37a76d 100644
+index cf063d6..91e17e6 100644
 --- a/internal/httpd/webadmin.go
 +++ b/internal/httpd/webadmin.go
-@@ -111,6 +111,9 @@ var (
+@@ -30,6 +30,7 @@ import (
+ 	"sort"
+ 	"strconv"
+ 	"strings"
++	"sync"
+ 	"time"
+ 
+ 	"github.com/sftpgo/sdk"
+@@ -111,6 +112,9 @@ var (
  )
  
  type basePage struct {
@@ -367,7 +379,7 @@ index cf063d6..f37a76d 100644
  	commonBasePage
  	Title               string
  	CurrentURL          string
-@@ -574,6 +577,7 @@ func loadAdminTemplates(templatesPath string) {
+@@ -574,6 +578,7 @@ func loadAdminTemplates(templatesPath string) {
  	adminTemplates[templateProfile] = profileTmpl
  	adminTemplates[templateChangePwd] = changePwdTmpl
  	adminTemplates[templateMaintenance] = maintenanceTmpl
@@ -375,7 +387,7 @@ index cf063d6..f37a76d 100644
  	adminTemplates[templateDefender] = defenderTmpl
  	adminTemplates[templateIPLists] = ipListsTmpl
  	adminTemplates[templateIPList] = ipListTmpl
-@@ -664,6 +668,9 @@ func (s *httpdServer) getBasePageData(title, currentURL string, w http.ResponseW
+@@ -664,6 +669,9 @@ func (s *httpdServer) getBasePageData(title, currentURL string, w http.ResponseW
  		FolderQuotaScanURL:  webScanVFolderPath,
  		MaintenanceURL:      webMaintenancePath,
  		LoggedUser:          getAdminFromToken(r),
@@ -385,7 +397,7 @@ index cf063d6..f37a76d 100644
  		IsEventManagerPage:  isEventManagerResource(currentURL),
  		IsIPManagerPage:     isIPListsResource(currentURL),
  		IsServerManagerPage: isServerManagerResource(currentURL),
-@@ -2975,15 +2982,18 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
+@@ -2975,15 +2983,18 @@ func (s *httpdServer) handleWebAdminProfilePost(w http.ResponseWriter, r *http.R
  		s.renderProfilePage(w, r, err)
  		return
  	}
@@ -408,8 +420,64 @@ index cf063d6..f37a76d 100644
  }
  
  func (s *httpdServer) handleWebMaintenance(w http.ResponseWriter, r *http.Request) {
+@@ -4317,6 +4328,8 @@ func (s *httpdServer) handleWebConfigs(w http.ResponseWriter, r *http.Request) {
+ 	s.renderConfigsPage(w, r, configs, nil, 0)
+ }
+ 
++var nasWebConfigsLock sync.Mutex
++
+ func (s *httpdServer) handleWebConfigsPost(w http.ResponseWriter, r *http.Request) {
+ 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
+ 	claims, err := jwt.FromContext(r.Context())
+@@ -4324,11 +4337,6 @@ func (s *httpdServer) handleWebConfigsPost(w http.ResponseWriter, r *http.Reques
+ 		s.renderForbiddenPage(w, r, util.NewI18nError(errInvalidTokenClaims, util.I18nErrorInvalidToken))
+ 		return
+ 	}
+-	configs, err := dataprovider.GetConfigs()
+-	if err != nil {
+-		s.renderInternalServerErrorPage(w, r, err)
+-		return
+-	}
+ 	err = r.ParseMultipartForm(maxRequestSize)
+ 	if err != nil {
+ 		s.renderBadRequestPage(w, r, util.NewI18nError(err, util.I18nErrorInvalidForm))
+@@ -4341,8 +4349,22 @@ func (s *httpdServer) handleWebConfigsPost(w http.ResponseWriter, r *http.Reques
+ 		s.renderForbiddenPage(w, r, util.NewI18nError(err, util.I18nErrorInvalidCSRF))
+ 		return
+ 	}
++	nasWebConfigsLock.Lock()
++	defer nasWebConfigsLock.Unlock()
++	configs, err := dataprovider.GetConfigs()
++	if err != nil {
++		s.renderInternalServerErrorPage(w, r, err)
++		return
++	}
+ 	var configSection int
+-	switch r.Form.Get("form_action") {
++	formAction := r.Form.Get("form_action")
++	switch formAction {
++	case "nas_admin_files_submit":
++		if claims.Role != "" {
++			http.Error(w, "Forbidden", http.StatusForbidden)
++			return
++		}
++		configs.NASAdminFilesEnabled = r.Form.Get("nas_admin_files_enabled") == "1"
+ 	case "sftp_submit":
+ 		configSection = 1
+ 		sftpConfigs := getSFTPConfigsFromPostFields(r)
+@@ -4380,6 +4402,10 @@ func (s *httpdServer) handleWebConfigsPost(w http.ResponseWriter, r *http.Reques
+ 		s.renderConfigsPage(w, r, configs, err, configSection)
+ 		return
+ 	}
++	if formAction == "nas_admin_files_submit" {
++		http.Redirect(w, r, webConfigsPath, http.StatusSeeOther)
++		return
++	}
+ 	postConfigsUpdate(configSection, configs)
+ 	s.renderMessagePage(w, r, util.I18nConfigsTitle, http.StatusOK, nil, util.I18nConfigsOK)
+ }
 diff --git a/internal/httpd/webclient.go b/internal/httpd/webclient.go
-index c2c7839..9cc1169 100644
+index c2c7839..8a7fac9 100644
 --- a/internal/httpd/webclient.go
 +++ b/internal/httpd/webclient.go
 @@ -83,6 +83,9 @@ func isZeroTime(t time.Time) bool {
@@ -430,7 +498,16 @@ index c2c7839..9cc1169 100644
  	baseClientPage
  	CurrentDir         string
  	DirsURL            string
-@@ -162,8 +166,12 @@ type shareLoginPage struct {
+@@ -151,6 +155,8 @@ type filesPage struct {
+ }
+ 
+ type shareLoginPage struct {
++	ShareOwner string
++	ShareOwnerAvatar string
+ 	commonBasePage
+ 	CurrentURL    string
+ 	Error         *util.I18nError
+@@ -162,8 +168,12 @@ type shareLoginPage struct {
  }
  
  type shareDownloadPage struct {
@@ -444,7 +521,7 @@ index c2c7839..9cc1169 100644
  }
  
  type shareUploadPage struct {
-@@ -257,12 +265,17 @@ func (u *userQuotaUsage) HasTranferQuota() bool {
+@@ -257,12 +267,17 @@ func (u *userQuotaUsage) HasTranferQuota() bool {
  	return u.UsedDownloadDataTransfer > 0 || u.UsedUploadDataTransfer > 0
  }
  
@@ -464,7 +541,7 @@ index c2c7839..9cc1169 100644
  	}
  	return ""
  }
-@@ -306,32 +319,32 @@ func (u *userQuotaUsage) IsDiskQuotaLow() bool {
+@@ -306,32 +321,32 @@ func (u *userQuotaUsage) IsDiskQuotaLow() bool {
  func (u *userQuotaUsage) GetTotalTransferQuota() string {
  	total := u.UsedUploadDataTransfer + u.UsedDownloadDataTransfer
  	if u.TotalDataTransfer > 0 {
@@ -505,7 +582,7 @@ index c2c7839..9cc1169 100644
  	}
  	return ""
  }
-@@ -555,6 +568,9 @@ func (s *httpdServer) getBaseClientPageData(title, currentURL string, w http.Res
+@@ -555,6 +570,9 @@ func (s *httpdServer) getBaseClientPageData(title, currentURL string, w http.Res
  		MFAURL:          webClientMFAPath,
  		CSRFToken:       csrfToken,
  		LoggedUser:      getUserFromToken(r),
@@ -515,7 +592,23 @@ index c2c7839..9cc1169 100644
  		IsLoggedToShare: false,
  		Branding:        s.binding.webClientBranding(),
  		Languages:       s.binding.languages(),
-@@ -765,6 +781,7 @@ func (s *httpdServer) renderSharedFilesPage(w http.ResponseWriter, r *http.Reque
+@@ -604,6 +622,15 @@ func (s *httpdServer) renderShareLoginPage(w http.ResponseWriter, r *http.Reques
+ 		Languages:      s.binding.languages(),
+ 		CheckRedirect:  false,
+ 	}
++	share, shareErr := dataprovider.ShareExists(getURLParam(r, "id"), "")
++	if shareErr == nil && share.Password != "" {
++		if usable, _ := share.IsUsable(util.GetIPFromRemoteAddress(r.RemoteAddr)); usable {
++			if owner, ownerErr := getUserForShare(share); ownerErr == nil {
++				data.ShareOwner = owner.Username
++				data.ShareOwnerAvatar = nasAvatarURL("user", owner.Username)
++			}
++		}
++	}
+ 	renderClientTemplate(w, templateShareLogin, data)
+ }
+ 
+@@ -765,6 +792,7 @@ func (s *httpdServer) renderSharedFilesPage(w http.ResponseWriter, r *http.Reque
  	baseData.IsLoggedToShare = share.Password != ""
  
  	data := filesPage{
@@ -523,7 +616,7 @@ index c2c7839..9cc1169 100644
  		baseClientPage: baseData,
  		Error:          err,
  		CurrentDir:     url.QueryEscape(dirName),
-@@ -795,8 +812,18 @@ func (s *httpdServer) renderShareDownloadPage(w http.ResponseWriter, r *http.Req
+@@ -795,8 +823,22 @@ func (s *httpdServer) renderShareDownloadPage(w http.ResponseWriter, r *http.Req
  	downloadLink string,
  ) {
  	data := shareDownloadPage{
@@ -536,13 +629,17 @@ index c2c7839..9cc1169 100644
 +	if ownerErr == nil {
 +		defer owner.CloseFs()
 +	}
-+	for _, sharedPath := range share.Paths {
++	for index, sharedPath := range share.Paths {
 +		data.ShareNames = append(data.ShareNames, path.Base(sharedPath))
-+		data.ShareItems = append(data.ShareItems, nasSharedItem{Name: path.Base(sharedPath), Directory: ownerErr == nil && nasSharedDirectory(&owner, sharedPath)})
++		item := nasSharedItem{Name: path.Base(sharedPath), Directory: ownerErr == nil && nasSharedDirectory(&owner, sharedPath)}
++		if !item.Directory && nasSharePreviewType(item.Name) != "" {
++			item.PreviewURL = nasSharePreviewURL(share.ShareID, "item", strconv.Itoa(index))
++		}
++		data.ShareItems = append(data.ShareItems, item)
  	}
  	data.LogoutURL = ""
  	if share.Password != "" {
-@@ -979,12 +1006,17 @@ func (s *httpdServer) handleClientSharePartialDownload(w http.ResponseWriter, r
+@@ -979,12 +1021,17 @@ func (s *httpdServer) handleClientSharePartialDownload(w http.ResponseWriter, r
  		s.renderClientMessagePage(w, r, util.I18nShareAccessErrorTitle, getRespStatus(err), err, "")
  		return
  	}
@@ -560,7 +657,17 @@ index c2c7839..9cc1169 100644
  	r.Body = http.MaxBytesReader(w, r.Body, maxRequestSize)
  	validScopes := []dataprovider.ShareScope{dataprovider.ShareScopeRead, dataprovider.ShareScopeReadWrite}
  	share, connection, err := s.checkPublicShare(w, r, validScopes)
-@@ -1221,6 +1253,11 @@ func (s *httpdServer) handleClientGetDirContents(w http.ResponseWriter, r *http.
+@@ -1037,6 +1084,9 @@ func (s *httpdServer) handleShareGetDirContents(w http.ResponseWriter, r *http.R
+ 			res["name"] = info.Name()
+ 			res["url"] = getFileObjectURL(share.GetRelativePath(name), info.Name(),
+ 				path.Join(webClientPubSharesPath, share.ShareID, "browse"))
++			if info.Mode().IsRegular() && nasSharePreviewType(info.Name()) != "" {
++				res["preview_url"] = getFileObjectURL(share.GetRelativePath(name), info.Name(), path.Join(webClientPubSharesPath, share.ShareID, "preview"))
++			}
+ 			res["last_modified"] = getFileObjectModTime(info.ModTime())
+ 			results = append(results, res)
+ 		}
+@@ -1221,6 +1271,11 @@ func (s *httpdServer) handleClientGetDirContents(w http.ResponseWriter, r *http.
  	}
  	defer common.Connections.Remove(connection.GetID())
  
@@ -572,7 +679,7 @@ index c2c7839..9cc1169 100644
  	name := connection.User.GetCleanedPath(r.URL.Query().Get("path"))
  	lister, err := connection.ReadDir(name)
  	if err != nil {
-@@ -1233,7 +1270,7 @@ func (s *httpdServer) handleClientGetDirContents(w http.ResponseWriter, r *http.
+@@ -1233,7 +1288,7 @@ func (s *httpdServer) handleClientGetDirContents(w http.ResponseWriter, r *http.
  	dirTree := r.URL.Query().Get("dirtree") == "1"
  	dataGetter := func(limit, offset int) ([]byte, int, error) {
  		contents, finished, err := nextRenderableEntries(lister, limit, func(info os.FileInfo) bool {
@@ -581,7 +688,7 @@ index c2c7839..9cc1169 100644
  		})
  		if err != nil {
  			return nil, 0, err
-@@ -1382,7 +1419,7 @@ func (s *httpdServer) handleClientEditFile(w http.ResponseWriter, r *http.Reques
+@@ -1382,7 +1437,7 @@ func (s *httpdServer) handleClientEditFile(w http.ResponseWriter, r *http.Reques
  		s.renderClientMessagePage(w, r, util.I18nErrorEditorTitle, http.StatusBadRequest,
  			util.NewI18nError(
  				util.NewValidationError(fmt.Sprintf("The file size %v for %q exceeds the maximum allowed size",
@@ -590,7 +697,7 @@ index c2c7839..9cc1169 100644
  				util.I18nErrorEditSize,
  			), "")
  		return
-@@ -1486,9 +1523,24 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
+@@ -1486,9 +1541,24 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
  		return
  	}
  	share.ID = 0
@@ -616,7 +723,7 @@ index c2c7839..9cc1169 100644
  	if share.Password == "" {
  		if slices.Contains(claims.Permissions, sdk.WebClientShareNoPasswordDisabled) {
  			s.renderAddUpdateSharePage(w, r, share,
-@@ -1519,11 +1571,11 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
+@@ -1519,11 +1589,11 @@ func (s *httpdServer) handleClientAddSharePost(w http.ResponseWriter, r *http.Re
  		), true)
  		return
  	}
@@ -631,7 +738,7 @@ index c2c7839..9cc1169 100644
  	}
  }
  
-@@ -1588,11 +1640,14 @@ func (s *httpdServer) handleClientUpdateSharePost(w http.ResponseWriter, r *http
+@@ -1588,11 +1658,14 @@ func (s *httpdServer) handleClientUpdateSharePost(w http.ResponseWriter, r *http
  		), false)
  		return
  	}
@@ -648,7 +755,7 @@ index c2c7839..9cc1169 100644
  	}
  }
  
-@@ -1604,12 +1659,24 @@ func getAllShares(w http.ResponseWriter, r *http.Request) {
+@@ -1604,12 +1677,24 @@ func getAllShares(w http.ResponseWriter, r *http.Request) {
  		return
  	}
  
@@ -674,7 +781,7 @@ index c2c7839..9cc1169 100644
  		return data, len(shares), err
  	}
  
-@@ -1665,7 +1732,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+@@ -1665,7 +1750,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
  		))
  		return
  	}
@@ -683,7 +790,7 @@ index c2c7839..9cc1169 100644
  		for k := range r.Form {
  			if hasPrefixAndSuffix(k, "public_keys[", "][public_key]") {
  				r.Form.Add("public_keys", r.Form.Get(k))
-@@ -1673,7 +1740,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+@@ -1673,7 +1758,7 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
  		}
  		user.PublicKeys = r.Form["public_keys"]
  	}
@@ -692,7 +799,7 @@ index c2c7839..9cc1169 100644
  		for k := range r.Form {
  			if hasPrefixAndSuffix(k, "tls_certs[", "][tls_cert]") {
  				r.Form.Add("tls_certs", r.Form.Get(k))
-@@ -1681,12 +1748,12 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+@@ -1681,12 +1766,12 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
  		}
  		user.Filters.TLSCerts = r.Form["tls_certs"]
  	}
@@ -709,7 +816,7 @@ index c2c7839..9cc1169 100644
  		for k := range r.Form {
  			if hasPrefixAndSuffix(k, "additional_emails[", "][additional_email]") {
  				email := strings.TrimSpace(r.Form.Get(k))
-@@ -1695,14 +1762,14 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
+@@ -1695,14 +1780,14 @@ func (s *httpdServer) handleWebClientProfilePost(w http.ResponseWriter, r *http.
  				}
  			}
  		}
@@ -726,7 +833,7 @@ index c2c7839..9cc1169 100644
  }
  
  func (s *httpdServer) handleWebClientMFA(w http.ResponseWriter, r *http.Request) {
-@@ -2207,7 +2274,7 @@ func executeDeleteTask(conn *Connection, task webTaskData) {
+@@ -2207,7 +2292,7 @@ func executeDeleteTask(conn *Connection, task webTaskData) {
  	go keepAliveTask(task, done, 2*time.Minute)
  
  	status := http.StatusOK
@@ -795,3 +902,32 @@ index e452242..060d1d9 100644
  }
  
  func (a *Admin) getACopy() Admin {
+diff --git a/internal/dataprovider/configs.go b/internal/dataprovider/configs.go
+index 1802a55..79b7f1e 100644
+--- a/internal/dataprovider/configs.go
++++ b/internal/dataprovider/configs.go
+@@ -542,11 +542,12 @@ func (c *BrandingConfigs) getACopy() *BrandingConfigs {
+ // Configs allows to set configuration keys disabled by default without
+ // modifying the config file or setting env vars
+ type Configs struct {
+-	SFTPD     *SFTPDConfigs    `json:"sftpd,omitempty"`
+-	SMTP      *SMTPConfigs     `json:"smtp,omitempty"`
+-	ACME      *ACMEConfigs     `json:"acme,omitempty"`
+-	Branding  *BrandingConfigs `json:"branding,omitempty"`
+-	UpdatedAt int64            `json:"updated_at,omitempty"`
++	NASAdminFilesEnabled bool             `json:"nas_admin_files_enabled,omitempty"`
++	SFTPD                *SFTPDConfigs    `json:"sftpd,omitempty"`
++	SMTP                 *SMTPConfigs     `json:"smtp,omitempty"`
++	ACME                 *ACMEConfigs     `json:"acme,omitempty"`
++	Branding             *BrandingConfigs `json:"branding,omitempty"`
++	UpdatedAt            int64            `json:"updated_at,omitempty"`
+ }
+ 
+ func (c *Configs) validate() error {
+@@ -649,5 +650,6 @@ func (c *Configs) getACopy() Configs {
+ 		result.Branding = c.Branding.getACopy()
+ 	}
+ 	result.UpdatedAt = c.UpdatedAt
++	result.NASAdminFilesEnabled = c.NASAdminFilesEnabled
+ 	return result
+ }

@@ -25,7 +25,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             {{.Branding.ShortName}}
         </span>
     </div>
-    <div class="card shadow-sm w-lg-600px w-md-450px">
+    <div class="card shadow-sm w-100 mw-600px">
         <div class="card-header bg-light">
             <h3 data-i18n="fs.download_ready" class="card-title section-title">Your download is ready</h3>
             {{- if .LogoutURL}}
@@ -40,7 +40,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
             <div class="air-share-details">
 <div class="air-public-share-person"><img class="air-public-share-avatar" src="{{.ShareOwnerAvatar}}" alt="分享人头像" data-air-i18n-attrs><span><span data-air-i18n>分享人：</span><strong>{{.ShareOwner}}</strong></span></div>
                 <div class="air-share-label"><span data-air-i18n>分享内容</span></div>
-                <ul class="air-share-names">{{range .ShareItems}}<li class="air-share-name"><i class="ki-duotone {{if .Directory}}ki-folder{{else}}ki-file{{end}} fs-2x text-primary"><i class="path1"></i><i class="path2"></i></i><span>{{.Name}}</span></li>{{end}}</ul>
+                <ul class="air-share-names">{{range .ShareItems}}<li class="air-share-name"><i class="ki-duotone {{if .Directory}}ki-folder{{else}}ki-file{{end}} fs-2x text-primary"><i class="path1"></i><i class="path2"></i></i><span class="flex-grow-1">{{.Name}}</span>{{if .PreviewURL}}<a href="{{.PreviewURL}}" target="_blank" rel="noopener" class="btn btn-sm btn-light-primary flex-shrink-0 text-nowrap air-share-preview-label" data-air-i18n>预览</a>{{end}}</li>{{end}}</ul>
                 <div class="air-share-time"><span data-air-i18n>分享时间：</span><time data-air-share-created="{{.ShareCreatedAt}}">—</time></div>
             </div>
             <div>
@@ -55,7 +55,7 @@ explicit grant from the SFTPGo Team (support@sftpgo.com).
         </div>
     </div>
 </div>
-<script src="{{.StaticURL}}/air-background.js?v=20261021-safari1"></script>
+<script src="{{.StaticURL}}/air-background.js?v=20261111-resume7"></script>
 <script {{if .CSPNonce}}nonce="{{.CSPNonce}}"{{end}}>
 {const link=document.getElementById('air-share-single-download');if(link?.dataset.airSingle==='true'){const owner='share:'+link.href;AirCloudTransfers.connect({owner,share:true});link.addEventListener('click',event=>{event.preventDefault();AirCloudTransfers.enqueueFile({owner,url:link.href,name:document.querySelector('.air-share-name span').textContent,size:0}).catch(()=>alert(window.AirI18n.t('下载失败')))});}}
 </script>

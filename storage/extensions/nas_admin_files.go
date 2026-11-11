@@ -16,9 +16,22 @@ import (
 
 var nasViewerLock sync.Mutex
 
+func nasAdminFilesEnabled() bool {
+	configs, err := dataprovider.GetConfigs()
+	return err == nil && configs.NASAdminFilesEnabled
+}
+
+func (p basePage) ShowNASAdminFiles() bool {
+	return p.LoggedUser != nil && p.LoggedUser.Role == "" && nasAdminFilesEnabled()
+}
+
 // Only a fully authenticated global administrator may open the storage root.
 // The file browser uses a separate cookie, bound to the owner's current signature.
 func (s *httpdServer) handleNASAdminFiles(w http.ResponseWriter, r *http.Request) {
+	if !nasAdminFilesEnabled() {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
 	claims, err := jwt.FromContext(r.Context())
 	if err != nil {
 		http.Error(w, "Forbidden", http.StatusForbidden)

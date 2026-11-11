@@ -11,6 +11,7 @@ import (
 type nasSharedItem struct {
 	Name      string
 	Directory bool
+	PreviewURL string
 }
 type nasShareRow struct {
 	dataprovider.Share

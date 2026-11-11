@@ -5,11 +5,14 @@ const path = require('node:path');
 const identity = require('./proxy-identity.cjs').createProxyIdentity(process.env.NAS_TRUSTED_PROXIES);
 const upstream = new URL(process.env.NAS_UPSTREAM || 'http://storage:8080');
 if (upstream.protocol !== 'http:') throw new Error('NAS_UPSTREAM must use the internal HTTP network');
+const dav = new URL(process.env.NAS_DAV_UPSTREAM || 'http://storage:8090');
+if (dav.protocol !== 'http:') throw new Error('NAS_DAV_UPSTREAM must use the internal HTTP network');
 const home = fs.readFileSync(path.join(__dirname, 'index.html'));
 const logo = fs.readFileSync(path.join(__dirname, 'logo.svg'));
 const accounts=require('./account-switcher.cjs').createAccounts({directory:process.env.NAS_ACCOUNTS_DIR||require('node:path').join(require('node:os').homedir(),'.air-cloud-accounts'),upstream:()=>upstream.origin,secure:req=>identity(req).protocol==='https',address:req=>identity(req).address});
 const server = http.createServer(async (req, res) => {
   const pathname = new URL(req.url, 'http://nas').pathname;
+  const webDAV = pathname === '/webdav' || pathname.startsWith('/webdav/');
   if(await accounts.handle(req,res))return;
   if(/^\/web\/(client|admin)\/logout$/.test(pathname))accounts.forget(req);
   const send = (status, type, data) => {
@@ -29,7 +32,7 @@ const server = http.createServer(async (req, res) => {
   }
   const shortShare = /^\/([A-Za-z0-9_-]{1,64})$/.exec(pathname);
   const reserved = new Set(['web','api','static','healthz','nas-login','lan-check']);
-  if (shortShare && !reserved.has(shortShare[1].toLowerCase())) {
+  if (!webDAV && shortShare && !reserved.has(shortShare[1].toLowerCase())) {
     if (!['GET','HEAD'].includes(req.method)) return send(405,'text/plain','Method not allowed');
     // Redirect keeps password-protected share cookies scoped to their native path.
     res.writeHead(302, {Location:'/web/client/pubshares/'+shortShare[1]+'/view'+new URL(req.url,'http://nas').search,'Cache-Control':'no-store'});
@@ -41,10 +44,13 @@ const server = http.createServer(async (req, res) => {
     if (key.startsWith('x-forwarded-') || key.startsWith('x-nas-') || ['forwarded', 'cf-connecting-ip', 'connection', 'proxy-connection', 'proxy-authorization'].includes(key)) delete headers[key];
   }
   const client = identity(req);
+  if (webDAV && client.protocol !== 'https') return send(403, 'text/plain', 'WebDAV requires HTTPS');
+  const target = webDAV ? dav : upstream;
+  if (webDAV) delete headers.cookie;
   headers['x-real-ip'] = client.address;
   headers['x-forwarded-proto'] = client.protocol;
   // Preserve the public Host for upstream CSRF checks and generated share URLs.
-  const proxy = http.request({hostname: upstream.hostname, port: upstream.port || 80, path: req.url, method: req.method, headers}, response => {
+  const proxy = http.request({hostname: target.hostname, port: target.port || 80, path: req.url, method: req.method, headers}, response => {
     res.writeHead(response.statusCode, response.headers);
     response.on('error', () => res.destroy());
     response.pipe(res);
